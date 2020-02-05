@@ -88,11 +88,11 @@ ggplot(modeled_slope_bias, aes(x = slope, y = model, fill = ASRV)) +
 
     
 #### save for later, dealing with aic file. column names need changing too
-### these data are not up to date. 
 aic <- read_csv("../results/parsed_aic.csv")
-aic %>% group_by(sites, bls) %>% mutate(aicrank = rank(aic)) %>% 
+aic %>% 
+    group_by(site, bl) %>% mutate(aicrank = rank(AIC)) %>% 
     filter(sites == 10) %>% 
-    ggplot(aes(x = bls, y = aicrank, fill=models)) + 
+    ggplot(aes(x = bl, y = aicrank, fill=models)) + 
     geom_col(position = position_dodge()) + 
     geom_hline(yintercept = 1:9) 
     
