@@ -1,135 +1,109 @@
+### SJS
+### This script runs some modeling on ../results/merged_branch_lengths_counts.csv
+
 library(tidyverse)
-library(magrittr)
-library(modelr)
-library(ape)
-library(tidytree)
+library(broom)
+library(ggforce)
 
+csv_path <- "../results/"
+input_file  <- "merged_branch_lengths_counts.csv"
+output_file <- "modeled_slope_bias.csv"
 
-SIM_LENGTH    <- 1e4
-SIG_THRESHOLD <- 0.01
-count_path <- "../simulations_counts/"
-tree_path  <- "../branch_length_inference/"
-out_path   <- "../results/"
-
-##### Read in all count csv files into a single tibble ########
-count_files <- dir(path = count_path, pattern = "*.csv")
-tibble(filename = count_files) %>%
-  mutate(file_contents = map(filename,
-           ~ read_csv(file.path(count_path, .))))  -> nested_count_files
-
-nested_count_files %>%
-  unnest(cols = c(file_contents)) %>%
-  separate(filename, c("info", "bye"), sep="\\.csv") %>% #site1_bl0.001.csv 
-  separate(info, c("sitenumber", "blnumber"), sep = "_") %>%
-  mutate(site = str_replace(sitenumber, "site", ""),
-         site = as.numeric(site),
-         sim_branch_length = str_replace(blnumber, "bl", ""), 
-         sim_branch_length = as.numeric(sim_branch_length)) %>%
-  filter(substitution_type == "amino_acid") %>% 
-  mutate(persite_count = count/SIM_LENGTH) %>%
-  group_by(site, sim_branch_length) %>%
-  mutate(count = sum(count),
-         persite_count = sum(persite_count)) %>%
-  ungroup() %>%
-  dplyr::select(-bye, -branch_name, -sitenumber, -blnumber, -substitution_type) %>%
-  distinct() -> site_aa_counts
-write_csv(site_aa_counts, paste0(out_path,"simulation_aa_counts.csv"))
-
-######### Read in all branch length (tree) files into a single tibble
-tree_files <- dir(path = tree_path, pattern = "*.treefile")
-tibble(filename = tree_files) %>%
-  mutate(file_contents = map(filename,
-           ~ as_tibble(read.tree(file.path(tree_path, .))))) -> nested_tree_files
-
-nested_tree_files %>%
-  unnest(cols = c(file_contents)) %>%
-  separate(filename, c("need", "bye"), sep="\\.treefile") %>%
-  separate(need, c("site", "sim_branch_length", "model"), sep = "_") %>%
-  mutate(site = str_replace(site, "site", ""),
-         site = as.numeric(site),
-         sim_branch_length = str_replace(sim_branch_length, "bl", ""), 
-         sim_branch_length = as.numeric(sim_branch_length), 
-         model = str_replace(model, "\\+F", "")) %>%
-  rename(branch_length = branch.length) %>%
-  na.omit() %>%
-  group_by(site, sim_branch_length, model) %>%
-  mutate(branch_length = sum(branch_length)) %>%
-  dplyr::select(-bye, -parent, -node, -label) %>%
-  ungroup() %>%
-  distinct() -> branch_lengths
-write_csv(branch_lengths, paste0(out_path, "inferred_branch_lengths.csv"))
-
-
-### Join site_aa_counts and branch_lengths by site and branch_name to obtain single full tibble for all data ####
-### In addition, create three new columns to represent model for its matrix and its +G "status" so they can all be treated as separate variables in linear models
-left_join(site_aa_counts, branch_lengths, by = c("site", "sim_branch_length")) %>% 
-    na.omit() %>%
-    mutate(ASRV = ifelse(str_detect(model,"\\+G"), TRUE, FALSE)) %>%
-    rowwise() %>%
-    mutate(model = str_replace(model, "\\+G", "")) -> full_data
-
-write_csv(full_data, paste0(out_path,"merged_branch_lengths_counts.csv"))
-
-###### Fixes slope to 1 for an estimate of bias ########
-lm_bl_count_offset <- function(df) {
+######## Fixes slope to 1 for an estimate of bias ############
+lm_bl_count_bias <- function(df) {
     lm(branch_length ~ offset(persite_count), data = df) ## formula fixes slope = 1 to give us the bias of the model   
 }         
-
+##############################################################
 
 ####### Fixes intercept to 0 for an estimate of slope ########
-lm_bl_count <- function(df) {
-  fitted_model <- lm(branch_length ~ 0 + persite_count, data = df)
-  result <- confint(fitted_model, "persite_count", level=1-SIG_THRESHOLD)
+lm_bl_count_slope <- function(df) {
+  lm(branch_length ~ 0 + persite_count, data = df) #%>%
+    #broom::tidy() %>%
+    #pull(estimate)
+  #result <- confint(fitted_model, "persite_count", level=1-SIG_THRESHOLD)
   ## within 1
-  lb <- result[[1]]
-  ub <- result[[2]]
-  if (1 >= lb & 1 <= ub) {  ## lb <= 1 <= ub
-    return (FALSE) ## NOT SIGNIFICANT
-  } else {
-    return(TRUE) ## SIGNIFICANTLY DIFFERENT FROM 1
-  }
-} 
+  #lb <- result[[1]]
+  #ub <- result[[2]]
+  #if (1 >= lb & 1 <= ub) {  ## TODO: make this `dplyr::between`
+  #  return (FALSE) ## NOT SIGNIFICANT
+  #} else {
+  #  return(TRUE) ## SIGNIFICANTLY DIFFERENT FROM 1
+  #}
+}
+###############################################################
 
+full_data <- read_csv(paste0(csv_path, input_file))
 
 
 full_data %>%
     group_by(site, ASRV, model) %>%
     nest() %>%
-    mutate(slope_differs_from_1 = map_lgl(data, lm_bl_count),
-           lm_bias = map(data, lm_bl_count_offset),
-           lm_bias_tidy = map(lm_bias, broom::tidy)) %>%
-    unnest(lm_bias_tidy) %>%
-    rename(bias = estimate, bias_se = std.error, bias_pvalue = p.value) %>%
-    ungroup() %>%
-    mutate(n = n(),
-           bias_pvalue = bias_pvalue * n,  ## eh some bonf stuff?
-           bias_pvalue = ifelse(bias_pvalue >= 1, 1, bias_pvalue)) %>%
-        dplyr::select(-lm_bias, -data, -term, -statistic, -n) -> modeled_data
+    mutate(lm_slope = map(data, lm_bl_count_slope),
+           lm_bias = map(data, lm_bl_count_bias)) -> full_data_models
 
 
-modeled_data %>% 
+### All slopes are significant
+full_data_models %>%
+    dplyr::select(site, ASRV, model, lm_slope) %>%
+    mutate(lm_slope_tidy = map(lm_slope, broom::tidy)) %>%
+    unnest(cols = c(lm_slope_tidy)) %>%
     ungroup() %>%
-    filter(!str_detect(model, "model")) %>%
-    mutate(sig_bias = bias_pvalue <= SIG_THRESHOLD) %>%
-    count(sig_bias, ASRV, model) %>%
+    dplyr::select(-lm_slope, -term, -std.error, -statistic) %>%
+    rename(slope = estimate, slope_p_value = p.value) %>%
+    mutate(slope_p_value_corrected = slope_p_value * n(),
+           slope_p_value_corrected = ifelse(slope_p_value_corrected >= 1, 1, slope_p_value_corrected)) -> modeled_slope
+
+### ~ 70% of bias significant
+full_data_models %>%
+    dplyr::select(site, ASRV, model, lm_bias) %>%
+    mutate(lm_bias_tidy = map(lm_bias, broom::tidy)) %>%
+    unnest(cols = c(lm_bias_tidy)) %>%
     ungroup() %>%
-    group_by(model, ASRV) %>%
-    spread(sig_bias, n) %>%
-    replace_na(list(`TRUE`=0, `FALSE`=0)) %>%
-    mutate(prop_biased = `TRUE`/(`FALSE` + `TRUE`)) %>%
-    dplyr::select(-`TRUE`, -`FALSE`) -> final_bias
+    dplyr::select(-lm_bias, -term, -std.error, -statistic) %>%
+    rename(bias = estimate, bias_p_value = p.value) %>%
+    mutate(bias_p_value_corrected = bias_p_value * n(),
+           bias_p_value_corrected = ifelse(bias_p_value_corrected >= 1, 1, bias_p_value_corrected)) -> modeled_bias
+
+left_join(modeled_slope, modeled_bias) -> modeled_slope_bias
+
+write_csv(modeled_slope_bias, paste0(csv_path, output_file))
+
+
+
+### Some plotting?!
+ggplot(modeled_slope_bias, aes(x = model, color = ASRV, y = slope)) + 
+    geom_jitter(position = position_jitterdodge(jitter.width=0.2), alpha=0.6) +
+    scale_color_brewer(palette = "Dark2")
     
-modeled_data %>% 
-    ungroup() %>%
-    filter(!str_detect(model, "model")) %>%
-    count(slope_differs_from_1, ASRV, model) %>%
-    ungroup() %>%
-    group_by(model, ASRV) %>%
-    spread(slope_differs_from_1, n) %>%
-    replace_na(list(`TRUE`=0, `FALSE`=0)) %>%
-    mutate(prop_slope_not_1 = `TRUE`/(`FALSE` + `TRUE`)) %>%
-    dplyr::select(-`TRUE`, -`FALSE`) %>%
-    left_join(final_bias) -> final_results
+### Some plotting?!
+ggplot(modeled_slope_bias, aes(x = model, fill = ASRV, y = slope)) + 
+    geom_boxplot() +
+    scale_fill_brewer(palette = "Dark2") +
+    scale_y_continuous(limits = c(0,5))
+    
+    
+ggplot(modeled_slope_bias, aes(x = slope, y = model, fill = ASRV)) + 
+    geom_density_ridges(alpha = 0.4) +
+    scale_fill_brewer(palette = "Dark2")
 
-write_csv(final_results, paste0(out_path, "final_modeled_slope_bias.csv"))
-
+    
+#### save for later, dealing with aic file. column names need changing too
+### these data are not up to date. 
+aic <- read_csv("../results/parsed_aic.csv")
+aic %>% group_by(sites, bls) %>% mutate(aicrank = rank(aic)) %>% 
+    filter(sites == 10) %>% 
+    ggplot(aes(x = bls, y = aicrank, fill=models)) + 
+    geom_col(position = position_dodge()) + 
+    geom_hline(yintercept = 1:9) 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
