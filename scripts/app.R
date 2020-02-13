@@ -1,13 +1,15 @@
 library(shiny)
 library(tidyverse)
 
+library(shinythemes)
+
 
 
 input_file <- "../results/final_tibble.csv"
 final_tibble <- read_csv(input_file)
 
 # Define UI for application that draws a scatterplot
-ui <- fluidPage(
+ui <- fluidPage(theme =shinytheme("darkly"),
     
    
     # Application title
@@ -47,10 +49,10 @@ server <- function(input, output) {
             geom_abline(color = "black") + 
             labs(title = "Count vs Branch Length", x = "Persite Count", y = "Branch Length") +
             theme_bw(base_size = 18) +
-            theme(plot.background = element_rect(fill = "gray"),
+            theme(plot.background = element_rect(fill = "white"),
                   legend.position = "none", 
-                  strip.background = element_rect(color = "black", fill = "white")) #+
-            #annotate(data= final_tibble, x = 1, y = 1, aes(label = model))
+                  strip.background = element_rect(color = "black", fill = "white")) +
+            geom_text( x = 0.5, y = 3, aes(label = bias),color = "black")
         
     })
 }
