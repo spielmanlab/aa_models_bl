@@ -40,7 +40,8 @@ server <- function(input, output) {
             facet_grid(ASRV~model) +#, scales="free") + 
             #facet_wrap(model~ASRV, nrow=5) + 
             geom_abline(color = "red") + 
-            theme_bw() + 
+            theme_bw() +
+            theme(plot.background = element_rect(fill = "black")) +
             theme(legend.position = "none") 
         
     })
