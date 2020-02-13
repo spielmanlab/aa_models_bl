@@ -1,10 +1,15 @@
 library(shiny)
 library(tidyverse)
 
+
+
+input_file <- "../results/final_tibble.csv"
+final_tibble <- read_csv(input_file)
+
 # Define UI for application that draws a scatterplot
 ui <- fluidPage(
     
-
+   
     # Application title
     titlePanel("Site to Plot"),
 
@@ -24,8 +29,7 @@ ui <- fluidPage(
 
 # Define server logic required to draw a scatterplot
 server <- function(input, output) {
-
-    output$bl_plot <- renderPlot(height = 900, width = 1250,{
+    output$bl_plot <- renderPlot(height = 600, width = 1250,{
        
         # define the dataframe
         #add modeled slope bias from results
@@ -40,12 +44,14 @@ server <- function(input, output) {
             geom_smooth(method = "lm") +  #, se = FALSE) +
             facet_grid(ASRV~model) +#, scales="free") + 
             #facet_wrap(model~ASRV, nrow=5) + 
-            geom_abline(color = "red") + 
+            geom_abline(color = "black") + 
             labs(title = "Count vs Branch Length", x = "Persite Count", y = "Branch Length") +
-            theme_bw(base_size = 15) +
-            theme(plot.background = element_rect(fill = "gray")) +
-            
-            theme(legend.position = "none") 
+            theme_bw(base_size = 18) +
+            theme(plot.background = element_rect(fill = "gray"),
+                  legend.position = "none", 
+                  strip.background = element_rect(color = "black", fill = "white")) #+
+            #annotate(data= final_tibble, x = 1, y = 1, aes(label = model))
+        
     })
 }
 
