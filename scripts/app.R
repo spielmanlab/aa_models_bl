@@ -6,7 +6,7 @@ ui <- fluidPage(
     
 
     # Application title
-    titlePanel("Site to Simulate"),
+    titlePanel("Site to Plot"),
 
     # Sidebar with a text input to simulate a site
     sidebarLayout(
@@ -25,7 +25,8 @@ ui <- fluidPage(
 # Define server logic required to draw a scatterplot
 server <- function(input, output) {
 
-    output$bl_plot <- renderPlot({
+    output$bl_plot <- renderPlot(height = 900, width = 1250,{
+       
         # define the dataframe
         #add modeled slope bias from results
         #make the app look nicer
@@ -40,10 +41,11 @@ server <- function(input, output) {
             facet_grid(ASRV~model) +#, scales="free") + 
             #facet_wrap(model~ASRV, nrow=5) + 
             geom_abline(color = "red") + 
-            theme_bw() +
-            theme(plot.background = element_rect(fill = "black")) +
+            labs(title = "Count vs Branch Length", x = "Persite Count", y = "Branch Length") +
+            theme_bw(base_size = 15) +
+            theme(plot.background = element_rect(fill = "gray")) +
+            
             theme(legend.position = "none") 
-        
     })
 }
 
