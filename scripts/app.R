@@ -37,7 +37,10 @@ server <- function(input, output) {
     
     output$entropy_score    <- renderText(paste0("Entropy for this site is ", final_tibble %>%  
                                                                               dplyr::filter(site == input$site) %>% 
-                                                                              dplyr::pull(entropy[1])))
+                                                                              dplyr::filter(sim_branch_length == 1.00) %>%
+                                                                              dplyr::filter(model == "WAG") %>%
+                                                                              dplyr::filter(ASRV == "TRUE") %>%
+                                                                              dplyr::pull(entropy)))
     output$bl_plot          <- renderPlot(height = 600, width = 1250,{
    
    
