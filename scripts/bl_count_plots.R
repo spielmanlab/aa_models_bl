@@ -24,6 +24,9 @@ print(entropy_value[2])
 # [7] "Poisson_FALSE" "Poisson_TRUE"  "WAG_FALSE"     "WAG_TRUE"     
 #my_colors <- c() ## should be 10 long
 
+final_tibble %>%
+  dplyr::filter(site == "5") %>% dplyr::pull(entropy) %>% print()
+
 
 final_tibble %>%
   dplyr::filter(site == "54") %>% ##### instead of "1" input$_____

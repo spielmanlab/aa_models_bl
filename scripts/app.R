@@ -35,7 +35,9 @@ ui <- fluidPage(theme =shinytheme("darkly"),
 # Define server logic required to draw a scatterplot
 server <- function(input, output) {   
     
-    output$entropy_score    <- renderText("Entropy for this site is ")
+    output$entropy_score    <- renderText(paste0("Entropy for this site is ", final_tibble %>%  
+                                                                              dplyr::filter(site == input$site) %>% 
+                                                                              dplyr::pull(entropy[1])))
     output$bl_plot          <- renderPlot(height = 600, width = 1250,{
    
    
