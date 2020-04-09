@@ -28,7 +28,7 @@ entropy_value <- pull(final_tibble, entropy)
       final_tibble %>%  
       dplyr::filter(site == "54") %>% 
       group_by(site, model, ASRV ) %>% 
-      mutate(rank_AIC = rank(AIC, na.last = FALSE)) %>% left_join(final_tibble) -> final_tibble
+      mutate(rank_AIC = rank(AIC, na.last = FALSE)) %>% left_join(final_tibble) -> ranked_final_tibble
       
  
       
