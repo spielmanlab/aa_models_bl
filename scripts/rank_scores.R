@@ -15,23 +15,20 @@ aic_tibble      <- read_csv(aic_read)
 
 
 # Join input --------------------------------------
-## THE LINES BELOW DON'T WORK PROPERLY - YOU NEED TO SAVE THE OUTPUT FROM LINES 24/25 TO GET 26 TO WORK...
 bl_tibble %>%
-  unite(model_ASRV, model, ASRV, remove=FALSE) ->bl_asrv_tibble
-bl_asrv_tibble$model_ASRV <- factor(bl_asrv_tibble$model_ASRV)
-####################################################
+  unite(model_ASRV, model, ASRV, remove=FALSE) %>%
+  mutate(model_ASRV = factor(model_ASRV)) ->bl_asrv_tibble ## Quicker and tidier: make columns into factors with mutate!
+#bl_asrv_tibble$model_ASRV <- factor(bl_asrv_tibble$model_ASRV)
 
 left_join(bl_tibble, slope_tibble) %>%
 left_join(entropy_tibble) %>%
 left_join(aic_tibble) ->   final_tibble
 
-print(final_tibble)
-
- 
 
 final_tibble %>%  
-group_by(site, model, ASRV ) %>% 
-mutate(rank_AIC = rank(AIC, na.last = FALSE)) %>% left_join(final_tibble) -> ranked_final_tibble
+  group_by(site, model, ASRV ) %>%  ## need to also group by `sim_branch_length` - see how many things have the same rank? Not how ranking works!
+  mutate(rank_AIC = rank(AIC, na.last = FALSE)) %>% 
+  left_join(final_tibble) -> ranked_final_tibble
       
  
 
