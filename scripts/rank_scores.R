@@ -26,10 +26,10 @@ left_join(aic_tibble) ->   final_tibble
 
 
 final_tibble %>%  
-  group_by(site, model, ASRV ) %>%  ## need to also group by `sim_branch_length` - see how many things have the same rank? Not how ranking works!
+  group_by(sim_branch_length, site, ASRV ) %>%  ## need to also group by `sim_branch_length` - see how many things have the same rank? Not how ranking works!
   mutate(rank_AIC = rank(AIC, na.last = FALSE)) %>% 
-  left_join(final_tibble) -> ranked_final_tibble
-      
+  left_join(final_tibble) -> ranked_final_tibble 
+  print(ranked_final_tibble)
  
 
 
