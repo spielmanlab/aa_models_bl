@@ -1,3 +1,6 @@
+## Written by SJS to compute mutsel-based dN/dS and entropy from NP preferences
+
+
 from compute_dnds_from_mutsel import *
 import pyvolve
 
@@ -6,9 +9,9 @@ def calculate_entropy(f):
 
 
 mutation_rates = {'AG':2.4e-5, 'TC':2.4e-5, 'GA':2.3e-5, 'CT':2.3e-5, 'AC':9.0e-6, 'TG':9.0e-6, 'CA':9.4e-6, 'GT':9.4e-6, 'AT':3.0e-6, 'TA':3.0e-6, 'GC':1.9e-6, 'CG':1.9e-6}
-preference_file = "preferences/NP_prefs.csv"
+preference_file = "../preferences/NP_prefs.csv"
 
-outfile = "np_site_dnds_entropy.csv"
+outfile = "../results/np_site_dnds_entropy.csv"
 outstring = "site,dnds,entropy\n"
 
 prefs_all = np.loadtxt(preference_file, delimiter=",")
