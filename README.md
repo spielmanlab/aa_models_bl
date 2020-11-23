@@ -8,7 +8,7 @@ Assess the reliability of protein empirical models for inferring divergence. Due
 + Stephanie Spielman ([@sjspielman](https://github.com/sjspielman)): Lead investigator
 + Frankie Picone ([@piconef8](https://github.com/piconef8)): Undergraduate research assistant
 	+ Summer 2019 - Spring 2020
-+ Jake Mihalecz (github account forthcoming): Undergraduate research assistant
++ Jake Mihalecz ([@jakemihalecz](https://github.com/jakemihalecz)): Undergraduate research assistant
 	+ Fall 2020 - 
 
 
