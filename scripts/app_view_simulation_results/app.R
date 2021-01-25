@@ -1,0 +1,79 @@
+## Written by FJP with some SJS addins.
+
+library(shiny)
+library(tidyverse)
+library(shinythemes)
+
+
+
+input_file <- "app_data.csv"
+final_tibble <- read_csv(input_file)
+#print(final_tibble)
+
+# Define UI for application that draws a scatterplot
+ui <- fluidPage(theme =shinytheme("darkly"),
+                
+                
+                # Application title
+                titlePanel("Site to Plot"),
+                
+                # Sidebar with a text input to simulate a site
+                sidebarLayout(
+                  sidebarPanel(
+                    numericInput("site", "Site:", value = 1, min = 1, max = 498)
+                    
+                  ),
+                  
+                  # Show a plot of the generated final tibble
+                  mainPanel(
+                    textOutput("entropy_score"),
+                    br(),
+                    plotOutput("bl_plot", width = "200px", height = "100px"),
+                    
+                  )
+                )
+)
+
+# Define server logic required to draw a scatterplot
+server <- function(input, output) {   
+  
+  site_entropy <- reactive({
+    final_tibble %>%  
+      dplyr::filter(site == input$site) %>% 
+      dplyr::select(entropy) %>%
+      distinct() %>% 
+      pull(entropy) -> h
+    round(h,4)
+  })
+  
+  output$entropy_score    <- renderText(paste0("Entropy for this site is ", site_entropy()))
+  output$bl_plot          <- renderPlot(height = 600, width = 1250,{
+    
+    
+    ASRV.labs <- c("NO Gamma", "YES Gamma")
+    names(ASRV.labs) <- c("FALSE", "TRUE")
+    
+    final_tibble %>% 
+      dplyr::filter(site == input$site) %>% 
+      dplyr::mutate(model = factor(model,levels = c("JTT", "WAG", "LG", "FLU", "Poisson"))) %>%
+      
+      ggplot(aes(x = persite_count, y = branch_length, color = model)) +
+      geom_point()  + 
+      geom_smooth(method = "lm") +  #, se = FALSE) +
+      facet_grid(ASRV~model, labeller = labeller(ASRV = ASRV.labs)) +#, scales="free") + 
+      #facet_wrap(model~ASRV, nrow=5) + 
+      geom_abline(color = "black") + 
+      labs(x = "Number of simulation substitutions PER SITE (TRUE VALUE)", y = "Measured number of substitutions PER SITE (THE ESTIMATOR)") +
+      scale_color_brewer(palette = "Set1") + 
+      # ugh this does need to be fixed but i am lazyyyyy
+      geom_text(x = 0.6, y = 3, size=5, aes(label = paste("bias:",round(bias, 4))),color = "black") +
+      theme_bw(base_size = 18) +
+      theme(plot.background = element_rect(fill = "white"),
+            legend.position = "none", 
+            strip.background = element_rect(color = "black", fill = "white"))
+    
+  }) 
+} 
+
+# Run the application 
+shinyApp(ui = ui, server = server)

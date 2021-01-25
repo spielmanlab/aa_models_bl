@@ -1,5 +1,9 @@
 ### SJS
+
+## SCRIPT NEEDS REVIVING AND IT IS NOT READY YET
+# WHAT I THINK IT DID:
 ### This script runs some modeling on ../results/merged_branch_lengths_counts.csv
+### Produces `modeled_slopt_bias.csv`
 
 library(tidyverse)
 library(broom)
