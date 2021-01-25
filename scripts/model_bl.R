@@ -3,7 +3,7 @@
 ## SCRIPT NEEDS REVIVING AND IT IS NOT READY YET
 # WHAT I THINK IT DID:
 ### This script runs some modeling on ../results/merged_branch_lengths_counts.csv
-### Produces `modeled_slopt_bias.csv`
+### Produces `modeled_slope_bias.csv`
 
 library(tidyverse)
 library(broom)
@@ -53,7 +53,7 @@ full_data_models %>%
     unnest(cols = c(lm_slope_tidy)) %>%
     ungroup() %>%
     dplyr::select(-lm_slope, -term, -std.error, -statistic) %>%
-    rename(slope = estimate, slope_p_value = p.value) %>%
+    rename(slope_of_yint0 = estimate, slope_p_value = p.value) %>%
     mutate(slope_p_value_corrected = slope_p_value * n(),
            slope_p_value_corrected = ifelse(slope_p_value_corrected >= 1, 1, slope_p_value_corrected)) -> modeled_slope
 
@@ -74,32 +74,39 @@ write_csv(modeled_slope_bias, paste0(csv_path, output_file))
 
 
 
-### Some plotting?!
-ggplot(modeled_slope_bias, aes(x = model, color = ASRV, y = slope)) + 
-    geom_jitter(position = position_jitterdodge(jitter.width=0.2), alpha=0.6) +
-    scale_color_brewer(palette = "Dark2")
-    
-### Some plotting?!
-ggplot(modeled_slope_bias, aes(x = model, fill = ASRV, y = slope)) + 
-    geom_boxplot() +
-    scale_fill_brewer(palette = "Dark2") +
-    scale_y_continuous(limits = c(0,5))
-    
-    
-ggplot(modeled_slope_bias, aes(x = slope, y = model, fill = ASRV)) + 
-    geom_density_ridges(alpha = 0.4) +
-    scale_fill_brewer(palette = "Dark2")
+## plotting the slope a little?
+
+model_levels <- c("Poisson", "JTT", "WAG", "LG", "FLU")
+
+
+ggplot(modeled_slope_bias, 
+  aes(x = fct_relevel(model, model_levels), 
+      color = ASRV, 
+      y = slope_of_yint0)) + 
+    geom_violin(alpha=0, position = position_dodge()) +
+    geom_sina(position = position_dodge(),  size = 0.7) +
+    # doesn't work need to wrangle blech.
+    #stat_summary(position = "dodge", pch = 21, color = "black", aes(group = ASRV, fill=ASRV)) +
+    scale_color_brewer(palette = "Dark2") + 
+    geom_hline(yintercept=1) +
+    ggtitle("Estimate of slope when y-intercept is fixed to 0 in `lm(bl ~ persite_sim_count)`")
 
     
-#### save for later, dealing with aic file. column names need changing too
-aic <- read_csv("../results/parsed_aic.csv")
-aic %>% 
-    group_by(site, bl) %>% mutate(aicrank = rank(AIC)) %>% 
-    filter(sites == 10) %>% 
-    ggplot(aes(x = bl, y = aicrank, fill=models)) + 
-    geom_col(position = position_dodge()) + 
-    geom_hline(yintercept = 1:9) 
+
+ggplot(modeled_slope_bias, 
+  aes(x = fct_relevel(model, model_levels), 
+      color = ASRV, 
+      y = bias)) + 
+    geom_violin(alpha=0, position = position_dodge()) +
+    geom_sina(position = position_dodge(),  size = 0.7) +
+    scale_color_brewer(palette = "Dark2") + 
+    geom_hline(yintercept=0) + 
+    ggtitle("Estimate of y-intercept when slope is fixed to 1 in `lm(bl ~ persite_sim_count)`")
     
+    
+
+
+
     
     
     
