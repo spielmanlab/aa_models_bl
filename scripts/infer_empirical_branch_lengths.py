@@ -27,23 +27,36 @@ for fasta in fastas:
     fasfile = path_to_data + fasta
     if dataset_type != "mammal":
         treefile = fasfile.replace(".fasta", ".tre")
-    print(x) ## 9861 total
+    print(x) 
     x += 1
     for matrix in q_options:
         for gamma in g_options:
             model = matrix + gamma
+            final_log = outpath + fasta.replace(".fasta", "") + "-" + model + ".log" 
+            final_tree = outpath + fasta.replace(".fasta", "") + "-" + model + ".tre" 
+            
+            if (os.path.exists(final_log) and os.path.exists(final_tree)):
+                continue
             # --tree-fix is borked, filed an issue: https://github.com/iqtree/iqtree2/issues/17
             # used -te instead for now ^^
             #cmd = "iqtree2 -T " + threads + " -s " + fasfile + " -t " + treefile + " --tree-fix --redo"
             cmd = "iqtree2 -T " + threads + " -s " + fasfile + " -m " + model + " -te " + treefile + " --redo --quiet"
             #print(cmd) 
+            #assert 1==3
             cmdcode = os.system(cmd)
-            assert(cmdcode == 0)   
+            if cmdcode != 0:
+                print("---------------------------------------------------------")
+                print("error: ", fasfile, model)  
+                print(cmd) 
+                print("---------------------------------------------------------")
+                continue
             
+
             # Move files to final resting place 
-            os.system("rm " + fasfile + "*gz " + fasfile + ".iqtree" )
-            os.system("mv " + fasfile + ".* " + outpath)
-            
+            os.system("mv " + fasfile + ".log " + final_log)
+            os.system("mv " + fasfile + ".treefile " + final_tree)
+            os.system("rm " + fasfile + ".*")            
+            #assert 1==3
             
             
             
