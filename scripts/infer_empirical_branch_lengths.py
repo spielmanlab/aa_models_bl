@@ -20,15 +20,24 @@ outpath = path_to_data + "../" + dataset_type + "_optimized_bl/"
 q_options = ["WAG", "JTT", "LG", "FLU", "Poisson"]
 g_options = ["+F", "+F+G"]
 
-fastas = [x for x in os.listdir(path_to_data) if x.endswith("fasta")]
+# some are phys, it's cool
+fastas = [x for x in os.listdir(path_to_data) if x.endswith(".fasta")]
 
 x=1
 for fasta in fastas:
+    print(x)
+    x+=1
+    
     fasfile = path_to_data + fasta
     if dataset_type != "mammal":
         treefile = fasfile.replace(".fasta", ".tre")
-    print(x) 
-    x += 1
+    if dataset_type == "bird":
+        # Infer a quick fasttree. Does not need to be the best tree, just the SAME tree for all model bl optimizations
+        cmd = "FastTree -quiet -fastest -noml " + fasfile + " > " + treefile
+        cmdcode = os.system(cmd)
+        if cmdcode != 0:
+            print("BAD FASTREE:", fasta)
+            continue
     for matrix in q_options:
         for gamma in g_options:
             model = matrix + gamma
