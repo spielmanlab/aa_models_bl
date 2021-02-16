@@ -47,7 +47,7 @@ enzymes%>%
 
 enzymes%>%
   group_by(id)%>%
-  count(id) #and about 500 bacterial enzyme-coding genes      (?)
+  count(id) #and about 500 bacterial enzyme-coding genes    
 
 birds%>%
   group_by(ASRV)%>%
@@ -65,6 +65,15 @@ birds%>%
  summarize(sum_of_all_branchlengths=sum(branch_length))%>%
   arrange(desc(sum_of_all_branchlengths)) #this (I think)is a very crude way to show which genes are more conserved than others where larger branch lengths suggest higher tolerance to change. Interesting that some literally come out to be 0
 
+birds%>%
+  group_by(id, ASRV)%>%
+  summarize(avg_branch_length=mean(branch_length)) #just a quick way to view the differences between +G and -G for each gene reguardless of model.
+  
+
+
+
+
+  
 
 
 
