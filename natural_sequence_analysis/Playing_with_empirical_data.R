@@ -70,7 +70,13 @@ birds%>%
   summarize(avg_branch_length=mean(branch_length)) #just a quick way to view the differences between +G and -G for each gene reguardless of model.
   
 
-
+enzymes%>%
+  group_by(id, model, ASRV)%>%
+  summarize(treelength=sum(branch_length))%>%
+  filter(id=="13PK_A", ASRV=="TRUE")%>%
+  ggplot(aes(x=model, y=treelength))+
+  geom_col()+
+  theme_classic() #visualizing the different model outputs with G for each model for a specific enzyme
 
 
   
