@@ -1,11 +1,26 @@
+# Load libraries ----------------------------
 library(tidyverse)
-library(readr)
-birds<- read_csv("Junior_year/Research/bird_empirical_branch_lengths.csv")
+library(lme4) # random effects lm
+# Define important variables ----------------------------
+conditions_per_dataset <- 10  # 5 models * 2 ASRV = 10
 
-mammals<- read_csv("Junior_year/Research/mammal_empirical_branch_lengths.csv")
 
-enzymes<- read_csv("Junior_year/Research/enzyme_empirical_branch_lengths.csv")
+# Load datasets -----------------------------
+path_to_data <- "/Users/sjspielman/googledrive/research_data/data_aa_models_bl/empirical_branch_lengths/" #Junior_year/Research/"
+birds_file <- file.path(path_to_data, "bird_empirical_branch_lengths.csv")
+mammals_file <- file.path(path_to_data, "mammal_empirical_branch_lengths.csv")
+enzymes_file <- file.path(path_to_data, "enzyme_empirical_branch_lengths.csv")
 
+
+# optional strategy for saving time/sanity
+if (!(exists("birds"))) {
+  birds<- read_csv(birds_file)
+} 
+
+mammals<- read_csv(mammals_file)
+enzymes<- read_csv(enzymes_file)
+
+# Begin exploring -----------------------------------------
 birds%>%
   filter(id==100, model== "WAG", ASRV=="FALSE")%>%
   summarize(treelength=sum(branch_length)) #checking one individual treelength
@@ -13,17 +28,43 @@ birds%>%
 
 birds%>%
   group_by(model, ASRV, id)%>%
-  summarize(treelength=sum(branch_length))->bird_treelengths #show all of the individual treelengths 
+  summarize(treelength=sum(branch_length)) %>%
+  ungroup() -> bird_treelengths #show all of the individual treelengths 
+
+#### Assertions 
+bird_treelengths %>% 
+  count(id) %>% 
+  filter(n != conditions_per_dataset) %>%
+  nrow() -> number_bad
+stopifnot( number_bad == 0 ) # if this isn't true, STOP!!!
+# inside parentheses put what SHOULD BE TRUE
 
 bird_treelengths%>%
-  group_by(model)%>%
+  group_by(model, ASRV)%>%
   summarize(avg_tree_length= mean(treelength))%>%
   ggplot(aes(x=model, y=avg_tree_length, fill=model))+
   geom_col() #shows which model gives the highest avg tree length for the bird data (FLU)
 
+mammals %>%
+  group_by(model, ASRV, id)%>%
+  summarize(treelength=sum(branch_length)) %>%
+  ungroup() %>%
+  ggplot(aes(x=model, y=treelength, fill=model))+ 
+    geom_violin() + stat_summary() + 
+    facet_wrap(vars(ASRV), nrow=2)
+
+
+# similar to above but with something more numeric-y
+bird_treelengths%>%
+  ggplot(aes(x=model, y=treelength, color=model))+ 
+    geom_jitter(width = 0.2) + 
+    facet_wrap(vars(ASRV), nrow=2)
+
+
 mammals%>%
   group_by(model, ASRV, id)%>%
-  summarize(treelength=sum(branch_length))->mammal_treelengths # all treelengths for the mammal data
+  summarize(treelength=sum(branch_length)) %>%
+  ungroup() ->mammal_treelengths # all treelengths for the mammal data
 
 mammal_treelengths%>%
   group_by(model)%>%
@@ -41,9 +82,6 @@ birds%>%
   group_by(id)%>%
   count(id)%>%
   arrange(id)#and over 11,000 bird genes
-
-enzymes%>%
-  
 
 enzymes%>%
   group_by(id)%>%
@@ -81,11 +119,18 @@ enzymes%>%
 
   
 
+# Mammals modeling
+# what can we get asrv in the tukey if we make ASRV NOT logical? 
+
+lm(treelength ~ model + ASRV, data = mammal_treelengths) %>% 
+  aov() %>%
+  TukeyHSD()
+# do this ^^^ for enzyme and bird
 
 
-
+# random effects ?- inherent "grouping" in the data
+#lme4::lmer(treelength ~ model + ASRV + (1|id), data = mammal_treelengths) 
   
-
 
 
 
