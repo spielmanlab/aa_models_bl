@@ -2,24 +2,25 @@
 library(tidyverse)
 library(lme4) # random effects lm
 # Define important variables ----------------------------
-conditions_per_dataset <- 10  # 5 models * 2 ASRV = 10
+#conditions_per_dataset <- 10  # 5 models * 2 ASRV = 10
 
 
 # Load datasets -----------------------------
-path_to_data <- "/Users/sjspielman/googledrive/research_data/data_aa_models_bl/empirical_branch_lengths/" #Junior_year/Research/"
+path_to_data <- "/Users/jakemihalecz/Junior_year/Research/aa_models_bl/natural_sequence_analysis"
+
 birds_file <- file.path(path_to_data, "bird_empirical_branch_lengths.csv")
 mammals_file <- file.path(path_to_data, "mammal_empirical_branch_lengths.csv")
 enzymes_file <- file.path(path_to_data, "enzyme_empirical_branch_lengths.csv")
 
 
 # optional strategy for saving time/sanity
-if (!(exists("birds"))) {
-  birds<- read_csv(birds_file)
-} 
+#if (!(exists("birds"))) {
+#  birds<- read_csv(birds_file)
+#} 
 
 mammals<- read_csv(mammals_file)
 enzymes<- read_csv(enzymes_file)
-
+birds<- read_csv(birds_file)
 # Begin exploring -----------------------------------------
 birds%>%
   filter(id==100, model== "WAG", ASRV=="FALSE")%>%
@@ -118,19 +119,104 @@ enzymes%>%
 
 
   
+#modeling------------------------
+# show the wrangling again
+birds%>%
+  group_by(model, ASRV, id)%>%
+  summarize(treelength=sum(branch_length)) %>%
+  ungroup() -> bird_treelengths
 
-# Mammals modeling
-# what can we get asrv in the tukey if we make ASRV NOT logical? 
+
+mammals%>%
+  group_by(model, ASRV, id)%>%
+  summarize(treelength=sum(branch_length)) %>%
+  ungroup() ->mammal_treelengths
+
+enzymes%>%
+  group_by(model, ASRV, id)%>%
+  summarize(treelength=sum(branch_length)) %>%
+  ungroup() ->enzyme_treelengths
+
+
+
+
+
+
+
+# Mammals modeling-----------------------------------------
 
 lm(treelength ~ model + ASRV, data = mammal_treelengths) %>% 
   aov() %>%
   TukeyHSD()
-# do this ^^^ for enzyme and bird
 
 
-# random effects ?- inherent "grouping" in the data
-#lme4::lmer(treelength ~ model + ASRV + (1|id), data = mammal_treelengths) 
-  
+#now try to get the ASRV in the Tukey
+
+mammal_treelengths%>%
+  mutate(ASRV_modified= if_else(ASRV=="TRUE", "Yes", "No"))-> mammal_treelengths_ASRV_modified
+
+
+lm(treelength ~ model + ASRV_modified, data = mammal_treelengths_ASRV_modified) %>% 
+  aov() %>%
+  TukeyHSD()
+
+
+#now with random effects
+
+lme4::lmer(treelength ~ model + ASRV + (1|id), data = mammal_treelengths) 
+
+
+
+
+
+# birds modeling--------------------------------------------
+
+
+lm(treelength ~ model + ASRV, data = bird_treelengths) %>% 
+  aov() %>%
+  TukeyHSD()
+
+
+
+#Now with ASRV
+bird_treelengths%>%
+  mutate(ASRV_modified= if_else(ASRV=="TRUE", "Yes", "No"))-> bird_treelengths_ASRV_modified
+
+
+lm(treelength ~ model + ASRV_modified, data = bird_treelengths_ASRV_modified) %>% 
+  aov() %>%
+  TukeyHSD()
+
+
+#now with random effects
+
+lme4::lmer(treelength ~ model + ASRV + (1|id), data = bird_treelengths) 
+
+
+#enzymes modeling-------------------------------------
+
+lm(treelength ~ model + ASRV, data = enzyme_treelengths) %>% 
+  aov() %>%
+  TukeyHSD()
+
+
+#now with ASRV
+enzyme_treelengths%>%
+  mutate(ASRV_modified= if_else(ASRV=="TRUE", "Yes", "No"))-> enzyme_treelengths_ASRV_modified
+
+lm(treelength ~ model + ASRV_modified, data = enzyme_treelengths_ASRV_modified) %>% 
+  aov() %>%
+  TukeyHSD()
+
+
+#now with random effects
+lme4::lmer(treelength ~ model + ASRV + (1|id), data = enzyme_treelengths) 
+
+
+
+
+
+
 
 
 
