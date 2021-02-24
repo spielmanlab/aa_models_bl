@@ -2,7 +2,7 @@
 library(tidyverse)
 library(lme4) # random effects lm
 # Define important variables ----------------------------
-#conditions_per_dataset <- 10  # 5 models * 2 ASRV = 10
+conditions_per_dataset <- 10  # 5 models * 2 ASRV = 10
 
 
 # Load datasets -----------------------------
@@ -212,12 +212,57 @@ lm(treelength ~ model + ASRV_modified, data = enzyme_treelengths_ASRV_modified) 
 #now with random effects
 lme4::lmer(treelength ~ model + ASRV + (1|id), data = enzyme_treelengths) 
 
+# mess around with making some figures----------------------------------------------------------------------------
+
+mammal_treelengths%>%
+  pivot_wider(names_from = model, values_from = treelength)%>%
+  pivot_longer(cols=c("FLU", "JTT" , "Poisson", "WAG"), 
+               names_to = "other_models", 
+               values_to = "treelength")->mammal_treelengths_LG_pivot 
+
+#this wrangling will allow for a direct comparison of LG treelengths vs all other models!!!
+
+ggplot((mammal_treelengths_LG_pivot), aes(x=LG, y=treelength))+
+  facet_wrap(vars(other_models))+
+  geom_point()+
+  theme_classic()+
+  geom_smooth(method = "lm")+
+  theme(strip.background =element_rect(fill="cornflowerblue"))+
+  labs(title= "LG vs. Other model's Mammal Treelengths", x="Treelength obtained from LG", y="Treelength obtained from other models")
+
+# now do the exact same thing for the other models!!!
+
+bird_treelengths%>%
+  pivot_wider(names_from = model, values_from = treelength)%>%
+  pivot_longer(cols=c("FLU", "JTT" , "Poisson", "WAG"), 
+               names_to = "other_models", 
+               values_to = "treelength")->bird_treelengths_LG_pivot 
+
+ggplot((bird_treelengths_LG_pivot), aes(x=LG, y=treelength))+
+  facet_wrap(vars(other_models))+
+  geom_point()+
+  theme_classic()+
+  geom_smooth(method = "lm")+
+  theme(strip.background =element_rect(fill="cornflowerblue"))+
+  labs(title= "LG vs. Other model's Bird Treelengths", x="Treelength obtained from LG", y="Treelength obtained from other models")
 
 
 
 
+enzyme_treelengths%>%
+  pivot_wider(names_from = model, values_from = treelength)%>%
+  pivot_longer(cols=c("FLU", "JTT" , "Poisson", "WAG"), 
+               names_to = "other_models", 
+               values_to = "treelength")->enzyme_treelengths_LG_pivot 
 
 
+ggplot((enzyme_treelengths_LG_pivot), aes(x=LG, y=treelength))+
+  facet_wrap(vars(other_models))+
+  geom_point()+
+  theme_classic()+
+  geom_smooth(method = "lm")+
+  theme(strip.background =element_rect(fill="cornflowerblue"))+
+  labs(title= "LG vs. Other model's Enzyme Treelengths", x="Treelength obtained from LG", y="Treelength obtained from other models")
 
 
 
