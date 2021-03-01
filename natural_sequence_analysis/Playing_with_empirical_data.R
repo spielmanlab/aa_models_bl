@@ -263,7 +263,7 @@ ggplot((bird_treelengths_LG_pivot), aes(x=LG, y=treelength))+
   geom_smooth(method = "lm")+
   theme(strip.background =element_rect(fill="cornflowerblue"))+
   labs(title= "LG vs. Other model's Bird Treelengths", x="Treelength obtained from LG", y="Treelength obtained from other models")
-
+``
 
 
 
