@@ -1,12 +1,16 @@
 # Load libraries ----------------------------
 library(tidyverse)
 library(lme4) # random effects lm
+
+
 # Define important variables ----------------------------
 conditions_per_dataset <- 10  # 5 models * 2 ASRV = 10
 
 
 # Load datasets -----------------------------
-path_to_data <- "/Users/jakemihalecz/Junior_year/Research/aa_models_bl/natural_sequence_analysis"
+
+# relative path! goal for all scripts = MEANT to run from directory where script lives 
+path_to_data <- "./" 
 
 birds_file <- file.path(path_to_data, "bird_empirical_branch_lengths.csv")
 mammals_file <- file.path(path_to_data, "mammal_empirical_branch_lengths.csv")
@@ -18,19 +22,45 @@ enzymes_file <- file.path(path_to_data, "enzyme_empirical_branch_lengths.csv")
 #  birds<- read_csv(birds_file)
 #} 
 
-mammals<- read_csv(mammals_file)
-enzymes<- read_csv(enzymes_file)
-birds<- read_csv(birds_file)
+mammals <- read_csv(mammals_file)
+enzymes <- read_csv(enzymes_file)
+birds   <- read_csv(birds_file)
+
+# Wrangle into treelengths tibbles ------------------------
+
+
+
+
+# for reference:
+#add <- function(a,b){
+#  a+b
+#}
+
+
+summarize_branch_lengths <- function(input_df) 
+{
+  input_df %>%
+    group_by(model, ASRV, id)%>%
+    summarize(treelength = sum(branch_length),
+              mean_bl    = mean(branch_length),
+              median_bl  = median(branch_length),
+              sd_bl      = sd(branch_length),
+              cov        = sd_bl / mean_bl, 
+              min_bl     = min(branch_length),
+              max_bl     = max(branch_length)) %>%
+    ungroup()
+}
+
+bird_branch_lengths <- summarize_branch_lengths(birds)
+mammals_branch_lengths <- summarize_branch_lengths(mammals)
+enzymes_branch_lengths <- summarize_branch_lengths(enzymes)
+
+
+
 # Begin exploring -----------------------------------------
 birds%>%
   filter(id==100, model== "WAG", ASRV=="FALSE")%>%
   summarize(treelength=sum(branch_length)) #checking one individual treelength
-
-
-birds%>%
-  group_by(model, ASRV, id)%>%
-  summarize(treelength=sum(branch_length)) %>%
-  ungroup() -> bird_treelengths #show all of the individual treelengths 
 
 #### Assertions 
 bird_treelengths %>% 
@@ -119,24 +149,6 @@ enzymes%>%
 
 
   
-#modeling------------------------
-# show the wrangling again
-birds%>%
-  group_by(model, ASRV, id)%>%
-  summarize(treelength=sum(branch_length)) %>%
-  ungroup() -> bird_treelengths
-
-
-mammals%>%
-  group_by(model, ASRV, id)%>%
-  summarize(treelength=sum(branch_length)) %>%
-  ungroup() ->mammal_treelengths
-
-enzymes%>%
-  group_by(model, ASRV, id)%>%
-  summarize(treelength=sum(branch_length)) %>%
-  ungroup() ->enzyme_treelengths
-
 
 
 
