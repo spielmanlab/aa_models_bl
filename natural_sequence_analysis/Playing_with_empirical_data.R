@@ -1,7 +1,9 @@
 # Load libraries ----------------------------
 library(tidyverse)
 library(lme4) # random effects lm
+library(cowplot)
 
+#source("utils.R") # remove comment when ready!
 
 # Define important variables ----------------------------
 conditions_per_dataset <- 10  # 5 models * 2 ASRV = 10
@@ -161,20 +163,21 @@ lm(treelength ~ model + ASRV, data = mammal_treelengths) %>%
   aov() %>%
   TukeyHSD()
 
-
+############################################################
+#################### Function me!!
 #now try to get the ASRV in the Tukey
-
 mammal_treelengths%>%
-  mutate(ASRV_modified= if_else(ASRV=="TRUE", "Yes", "No"))-> mammal_treelengths_ASRV_modified
+  mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No"))-> mammal_treelengths_ASRV_modified
 
 
 lm(treelength ~ model + ASRV_modified, data = mammal_treelengths_ASRV_modified) %>% 
   aov() %>%
-  TukeyHSD()
-
+  TukeyHSD() -> result
+#################################################################
+#result$model %>% as_tibble(rownames = "comparison")
+#result$ASRV_modified %>% as_tibble(rownames = "comparison")
 
 #now with random effects
-
 lme4::lmer(treelength ~ model + ASRV + (1|id), data = mammal_treelengths) 
 
 
@@ -235,10 +238,13 @@ mammal_treelengths%>%
 #this wrangling will allow for a direct comparison of LG treelengths vs all other models!!!
 
 ggplot((mammal_treelengths_LG_pivot), aes(x=LG, y=treelength))+
-  facet_wrap(vars(other_models))+
+  # goal: 2 rows, 4 columns
+  facet_grid(other_models ~ ASRV), scales="free")+
   geom_point()+
   theme_classic()+
   geom_smooth(method = "lm")+
+  geom_abline(color = "red") + 
+  cowplot::panel_border() + 
   theme(strip.background =element_rect(fill="cornflowerblue"))+
   labs(title= "LG vs. Other model's Mammal Treelengths", x="Treelength obtained from LG", y="Treelength obtained from other models")
 
