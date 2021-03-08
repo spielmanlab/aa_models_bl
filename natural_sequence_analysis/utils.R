@@ -17,38 +17,22 @@ summarize_branch_lengths <- function(input_df)
     ungroup()
 }
 
-
-
-
-add_asrv_function<-function(input_df_3)
+# This function will take a dataframe of treelengths, protein model, ASRV and lm treelength
+fit_treelength_model_ASRV <- function(input_df)
 {
-  input_df_3%>%
-    mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No"))
-}
-
-
-
-
-
-
-
-function_for_modeling<-function(input_df_2)
-{
-  lm(treelength ~ model+ ASRV_modified, data = input_df_2)%>% 
+  
+  input_df %>%
+    mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling
+  
+  lm(treelength ~ model+ ASRV_modified, data = df_for_modeling) %>% 
     aov() %>%
-    TukeyHSD()
-}
-
-
-
-function_for_model_outputs<-function(input_df_4)
-{
-  input_df_4$model %>% 
+    TukeyHSD() -> fitted_model
+  
+  fitted_model$model %>% 
     as_tibble(rownames = "comparison")
-  
-  
 }
-
+  
+  
 
 function_for_graphing<- function(input_df_5)
 {
