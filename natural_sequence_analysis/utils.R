@@ -1,6 +1,4 @@
-library(tidyverse)
-
-
+#library(tidyverse)
 
 
 summarize_branch_lengths <- function(input_df) 
@@ -11,7 +9,7 @@ summarize_branch_lengths <- function(input_df)
               mean_bl    = mean(branch_length),
               median_bl  = median(branch_length),
               sd_bl      = sd(branch_length),
-              cov        = sd_bl / mean_bl, 
+              cov_bl     = sd_bl / mean_bl, 
               min_bl     = min(branch_length),
               max_bl     = max(branch_length)) %>%
     ungroup()
@@ -38,7 +36,6 @@ plot_compare_treelengths<- function(input_df)
 {
   input_df%>%
     select(model,ASRV,id,treelength)%>%
-    filter(treelength<5)%>%
     pivot_wider(names_from = model, values_from = treelength)%>%
     pivot_longer(cols=c("FLU", "JTT" , "Poisson", "WAG"), 
                  names_to = "other_models", 

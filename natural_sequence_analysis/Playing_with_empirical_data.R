@@ -97,41 +97,20 @@ enzymes%>%
 
 
 
-#  Modeling with functions ------------------------------------------------------------------------
-#tried to add the ASRV coulumn and perform the linear model all in one function but R yelled at me
-
-#first, function to add the ASRV as a character into each branch length data set.
-
-
-add_asrv_function(mammal_branch_lengths)->mammal_branch_lengths_ASRV_modified
-add_asrv_function(bird_branch_lengths)->bird_branch_lengths_ASRV_modified
-add_asrv_function(enzyme_branch_lengths)->enzyme_branch_lengths_ASRV_modified
+#  How does model+ASRV affect treelength? ----------------------------------------------------------------
+fit_treelength_model_ASRV(mammal_branch_lengths) -> fitted_mammals_treelengths
+fit_treelength_model_ASRV(bird_branch_lengths)   -> fitted_bird_treelengths
+fit_treelength_model_ASRV(enzyme_branch_lengths) -> fitted_enzyme_treelengths
 
 
 
+# Scatterplot treelengths among models-----------------------------------
+plot_compare_treelengths(mammal_branch_lengths) -> mammal_treelength_figure
+plot_compare_treelengths(enzyme_branch_lengths) -> enzyme_treelength_figure
 
-#next, build models
-
-
-mammal_linear_model<- function_for_modeling(mammal_branch_lengths_ASRV_modified)
-bird_linear_model<- function_for_modeling(bird_branch_lengths_ASRV_modified)
-enzyme_linear_model<- function_for_modeling(enzyme_branch_lengths_ASRV_modified)
-
-
-#now, make the model output a little nicer on the eyes
-
-function_for_model_outputs(mammal_linear_model)->nice_output_mammal_model
-function_for_model_outputs(bird_linear_model)->nice_output_bird_model
-function_for_model_outputs(enzyme_linear_model)->nice_output_enzyme_model
-
-
-
-#Making figures with functions--------------------------------------------------------------
-
-function_for_graphing(mammal_branch_lengths)->mammal_treelength_figure
-function_for_graphing(bird_branch_lengths)->bird_treelength_figure
-function_for_graphing(enzyme_branch_lengths)->enzyme_treelength_figure
-
+bird_branch_lengths %>%
+  filter(treelength < 5) %>%
+  plot_compare_treelengths() -> bird_treelength_figure
 
 
   
