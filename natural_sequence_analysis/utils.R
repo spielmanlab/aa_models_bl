@@ -34,9 +34,9 @@ fit_treelength_model_ASRV <- function(input_df)
   
   
 
-function_for_graphing<- function(input_df_5)
+plot_compare_treelengths<- function(input_df)
 {
-  input_df_5%>%
+  input_df%>%
     select(model,ASRV,id,treelength)%>%
     filter(treelength<5)%>%
     pivot_wider(names_from = model, values_from = treelength)%>%
