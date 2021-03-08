@@ -3,7 +3,7 @@ library(tidyverse)
 library(lme4) # for random effects linear model
 library(cowplot)
 
-source("Utils.R")
+source("utils.R")
 
 # Define important variables ----------------------------
 conditions_per_dataset <- 10  # 5 models * 2 ASRV = 10
@@ -12,8 +12,7 @@ conditions_per_dataset <- 10  # 5 models * 2 ASRV = 10
 # Load datasets -------------------------------------
 
 # relative path! goal for all scripts = MEANT to run from directory where script lives 
-#for some reason the code will not work with the relative path...even after checking to ensure I was in the current directory...
-path_to_data <- "/Users/jakemihalecz/Junior_year/Research/aa_models_bl/natural_sequence_analysis" 
+path_to_data <- "./"
 
 
 birds_file <- file.path(path_to_data, "bird_empirical_branch_lengths.csv")
