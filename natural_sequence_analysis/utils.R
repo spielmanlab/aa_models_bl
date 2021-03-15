@@ -16,20 +16,26 @@ summarize_branch_lengths <- function(input_df)
 }
 
 # This function will take a dataframe of treelengths, protein model, ASRV and lm treelength
-fit_treelength_model_ASRV <- function(input_df)
+fit_model_ASRV <- function(input_df, response_variable)
 {
-  
   input_df %>%
     mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling
   
-  lm(treelength ~ model+ ASRV_modified, data = df_for_modeling) %>% 
+  # string works as solution to column argument b/c *IT'S A FORMULA*
+  formula <- paste(
+    response_variable, 
+    "~", 
+    "model + ASRV_modified") %>% as.formula()
+  
+  #lm(response_variable ~ model + ASRV_modified, data = df_for_modeling) %>% 
+  lm(formula, data = df_for_modeling) %>%
     aov() %>%
     TukeyHSD() -> fitted_model
   
   fitted_model$model %>% 
     as_tibble(rownames = "comparison")
 }
-  
+
   
 
 plot_compare_treelengths<- function(input_df)

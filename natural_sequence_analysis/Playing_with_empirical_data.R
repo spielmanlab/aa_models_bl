@@ -97,10 +97,10 @@ enzymes%>%
 
 
 
-#  How does model+ASRV affect treelength? ----------------------------------------------------------------
-fit_treelength_model_ASRV(mammal_branch_lengths) -> fitted_mammals_treelengths
-fit_treelength_model_ASRV(bird_branch_lengths)   -> fitted_bird_treelengths
-fit_treelength_model_ASRV(enzyme_branch_lengths) -> fitted_enzyme_treelengths
+# DEPRECATED:  How does model+ASRV affect treelength? ----------------------------------------------------------------
+#fit_treelength_model_ASRV(mammal_branch_lengths) -> fitted_mammals_treelengths
+#fit_treelength_model_ASRV(bird_branch_lengths)   -> fitted_bird_treelengths
+#fit_treelength_model_ASRV(enzyme_branch_lengths) -> fitted_enzyme_treelengths
 
 
 
