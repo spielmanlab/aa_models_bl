@@ -104,13 +104,12 @@ enzymes%>%
 
 
 
-# Scatterplot treelengths among models-----------------------------------
-plot_compare_treelengths(mammal_branch_lengths) -> mammal_treelength_figure
-plot_compare_treelengths(enzyme_branch_lengths) -> enzyme_treelength_figure
-
-bird_branch_lengths %>%
-  filter(treelength < 5) %>%
-  plot_compare_treelengths() -> bird_treelength_figure
+# DEPRECATED: Scatterplot treelengths among models-----------------------------------
+#plot_compare_treelengths(mammal_branch_lengths) -> mammal_treelength_figure
+#plot_compare_treelengths(enzyme_branch_lengths) -> enzyme_treelength_figure
+#bird_branch_lengths %>%
+#  filter(treelength < 5) %>%
+#  plot_compare_treelengths() -> bird_treelength_figure
 
 
   

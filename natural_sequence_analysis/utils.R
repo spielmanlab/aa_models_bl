@@ -38,25 +38,25 @@ fit_model_ASRV <- function(input_df, response_variable)
 
   
 
-plot_compare_treelengths<- function(input_df)
+plot_compare <- function(input_df, column_to_plot, plot_title, x_label, y_label)
 {
+  model_order <- c("JTT", "WAG", "LG", "FLU")
   input_df%>%
-    select(model,ASRV,id,treelength)%>%
-    pivot_wider(names_from = model, values_from = treelength)%>%
-    pivot_longer(cols=c("FLU", "JTT" , "Poisson", "WAG"), 
+    # use "curly-curly"
+    select(model,ASRV,id,{{column_to_plot}})%>%
+    pivot_wider(names_from = model, values_from = {{column_to_plot}})%>%
+    pivot_longer(cols=all_of(model_order), # sshhhhh 
                  names_to = "other_models", 
-                 values_to = "treelength")%>%
-    ggplot(aes(x=LG, y=treelength))+
+                 values_to = "yaxis")%>%
+    ggplot(aes(x=Poisson, yaxis))+
     geom_point()+
     theme_classic()+
-    facet_grid(vars(ASRV), vars(other_models))+
+    facet_grid(vars(ASRV), 
+               vars(fct_relevel(other_models, model_order)))+
     geom_smooth(method = "lm")+
     geom_abline(color = "red") + 
     cowplot::panel_border() + 
     theme(strip.background =element_rect(fill="cornflowerblue"))+
-    labs(title= "LG vs. Other model's Treelengths", x="Treelength obtained from LG", y="Treelength obtained from other models")
-  
+    labs(title= plot_title, 
+         x=x_label, y=y_label)
 }
-
-
-
