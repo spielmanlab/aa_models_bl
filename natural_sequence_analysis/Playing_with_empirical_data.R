@@ -59,10 +59,10 @@ linear_model_function_with_curlies(enzyme_branch_lengths, enzyme_branch_lengths$
 linear_model_function_with_curlies(enzyme_branch_lengths, enzyme_branch_lengths$treelength)
 
 
-#Now, lets plot with the plotting function
+#Now, lets plot with the plotting function------------------------------------------------------------------------
 #plot_compare_function <- function(input_df, column_to_plot, plot_title, x_label, y_label)
 #Note: do not have to use $ in the argument for this function...
 
 plot_compare_function(enzyme_branch_lengths, mean_bl, "Mean bl of Other Models vs. Poisson", "Poisson bl", "Other model bl")
-
+plot_compare_function(enzyme_branch_lengths, treelength, "Treelength of Other Models vs. Poisson", "Poisson Treelength", "Other model Treelengths")
   

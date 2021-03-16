@@ -66,7 +66,7 @@ linear_model_function_with_curlies<-function(input_branchlength_df, dependent_va
 
 
 
-#This function is useful for plotting any one of the columns in the branchlength dataframes and comparing each model's output to Poisson
+#This function is useful for plotting any one of the columns in the branchlength dataframes and comparing each model's output to Poisson's output
 
 plot_compare_function <- function(input_df, column_to_plot, plot_title, x_label, y_label)
 {
