@@ -45,9 +45,9 @@ summarize_branch_lengths <- function(input_df)
 
 
 
+##############################################################################################################
 
-
-# Another way to accomplish the previous function: This function will take a dataframe of branchlengths and a response variable and the output is the lm as a tibble.
+# Another way to accomplish the previous function: This function will take a dataframe of branchlengths and a dependent variable column and the output is the lm as a tibble.
 
 linear_model_function_with_curlies<-function(input_branchlength_df, dependent_variable_column)
 {
@@ -89,3 +89,41 @@ plot_compare_function <- function(input_df, column_to_plot, plot_title, x_label,
     labs(title= plot_title, 
          x=x_label, y=y_label)
 }
+
+
+#lets try to purr-------------------------------------------------------------------------------
+#want a lm for each bird ID. The output will be id, Intercept, Slope, pvalue (of intercept or slope), rsquared, and rsquared pvalue)
+#end up with NA's but I like this wider version better since Intercept and slope are their own columns
+
+birds %>% 
+  filter(ASRV == TRUE) %>% 
+  select(-ASRV, -dataset) %>% 
+  group_by(id) %>% 
+  pivot_wider(names_from = model, values_from = branch_length) -> asrv_true_birds_wide
+
+
+lm_function_with_purr_for_birds<-function(df)
+{
+  lm(FLU~Poisson, data=df)
+  
+}
+
+asrv_true_birds_wide%>%
+  select(Poisson, FLU)%>%
+  group_by(id)%>%
+  nest()%>%
+  mutate(lm_fit=map(data, lm_function_with_purr_for_birds))%>%
+  select(-data)%>%
+  mutate(tidied=map(lm_fit,broom::tidy), glanced=map(lm_fit, broom::glance))%>%
+  select(-lm_fit)%>%
+  unnest(glanced)%>%
+  select(id, tidied, r.squared, rsq.pvalue = p.value)%>%
+  unnest(tidied)%>%
+  select(-std.error)%>%
+  pivot_wider(names_from = term, values_from = estimate)%>%
+  rename(Slope=Poisson, Intercept=`(Intercept)`)%>%
+  select(id, Intercept, Slope, p.value, r.squared, rsq.pvalue, -statistic)
+  
+#-----------------------------------------------------------------------------
+
+
