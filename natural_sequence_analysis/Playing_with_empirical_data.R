@@ -68,15 +68,22 @@ plot_compare_function(enzyme_branch_lengths, treelength, "Treelength of Other Mo
 
 #Now, let's use map() to allow us to run several models at once--------------------------------------------
 
+function_for_Poisson_FLU_lm (birds)->lm_bird_output_tibble
+function_for_Poisson_FLU_lm (mega_empirical_dataset)->lm_mega_output_tibble
 
 
 
+#visualize the lm output--------------------------
 
 
-
-
-
-
+lm_mega_output_tibble%>%
+  group_by(dataset,id)%>%
+  ggplot(aes(x=dataset, y=r.squared))+
+  geom_jitter()+
+  labs(title = "Lm output for FLU~Poisson For Each Empirical Dataset", x="Dataset", y="R-Squared Value From lm")+
+  theme_classic()
+ 
+ 
 
 
 

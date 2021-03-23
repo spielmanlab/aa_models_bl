@@ -93,37 +93,56 @@ plot_compare_function <- function(input_df, column_to_plot, plot_title, x_label,
 
 #lets try to purr-------------------------------------------------------------------------------
 #want a lm for each bird ID. The output will be id, Intercept, Slope, pvalue (of intercept or slope), rsquared, and rsquared pvalue)
-#end up with NA's but I like this wider version better since Intercept and slope are their own columns
-
-birds %>% 
-  filter(ASRV == TRUE) %>% 
-  select(-ASRV, -dataset) %>% 
-  group_by(id) %>% 
-  pivot_wider(names_from = model, values_from = branch_length) -> asrv_true_birds_wide
+#end up with NA's but I like the wider version better since Intercept and slope are their own columns
 
 
-lm_function_with_purr_for_birds<-function(df)
+
+
+ #Create a mega dataset with birds, mammals, and enzymes 
+birds$id=as.character(birds$id)#had to do this to bind the rows
+
+
+bind_rows(enzymes, mammals, birds)->mega_empirical_dataset
+
+
+
+lm_function_with_purr<-function(df)
 {
   lm(FLU~Poisson, data=df)
   
 }
 
-asrv_true_birds_wide%>%
-  select(Poisson, FLU)%>%
-  group_by(id)%>%
-  nest()%>%
-  mutate(lm_fit=map(data, lm_function_with_purr_for_birds))%>%
-  select(-data)%>%
-  mutate(tidied=map(lm_fit,broom::tidy), glanced=map(lm_fit, broom::glance))%>%
-  select(-lm_fit)%>%
-  unnest(glanced)%>%
-  select(id, tidied, r.squared, rsq.pvalue = p.value)%>%
-  unnest(tidied)%>%
-  select(-std.error)%>%
-  pivot_wider(names_from = term, values_from = estimate)%>%
-  rename(Slope=Poisson, Intercept=`(Intercept)`)%>%
-  select(id, Intercept, Slope, p.value, r.squared, rsq.pvalue, -statistic)
+
+#This function takes the bird, enzyme, mammal, or mega dataframe and creates an lm output for FLU~Poisson 
+function_for_Poisson_FLU_lm <-function (input_df)
+{ 
+  input_df%>%
+    filter(ASRV == TRUE) %>% 
+    select(-ASRV) %>% 
+    group_by(id, dataset) %>% 
+    pivot_wider(names_from = model, values_from = branch_length)%>%
+    select(Poisson, FLU)%>%
+    group_by(dataset, id)%>%
+    nest()%>%
+    mutate(lm_fit=map(data, lm_function_with_purr))%>%
+    select(-data)%>%
+    mutate(tidied=map(lm_fit,broom::tidy), glanced=map(lm_fit, broom::glance))%>%
+    select(-lm_fit)%>%
+    unnest(glanced)%>%
+    select(id, tidied, r.squared, rsq.pvalue = p.value)%>%
+    unnest(tidied)%>%
+    select(-std.error)%>%
+    pivot_wider(names_from = term, values_from = estimate)%>%
+    rename(Slope=Poisson, Intercept=`(Intercept)`)%>%
+    select(id, Intercept, Slope, p.value, r.squared, rsq.pvalue, -statistic)
   
-#-----------------------------------------------------------------------------
+}
+
+
+
+
+
+
+
 
 
