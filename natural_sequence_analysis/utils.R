@@ -139,6 +139,42 @@ function_for_Poisson_FLU_lm <-function (input_df)
 }
 
 
+#lets up the game again, make a function that has which models we choose to lm as variables----------------
+
+lm_function_with_purr_curlies<-function(model1, model2, df)
+{
+  lm({{model1}}~{{model2}}, data=df)
+}
+
+
+
+Function_for_lm_for_any_dataset_and_any_two_models<- function (input_df, ASRV_T_F, model1, model2)
+{
+    input_df%>%
+    filter(ASRV == ASRV_T_F) %>% 
+    select(-ASRV) %>% 
+    group_by(id, dataset) %>% 
+    pivot_wider(names_from = model, values_from = branch_length)%>%
+    select({{model1}}, {{model2}})%>%
+    group_by(dataset, id)%>%
+    nest()%>%
+    mutate(lm_fit=map(data,lm_function_with_purr_curlies))%>%
+    select(-data)%>%
+    mutate(tidied=map(lm_fit,broom::tidy), glanced=map(lm_fit, broom::glance))%>%
+    select(-lm_fit)%>%
+    unnest(glanced)%>%
+    select(id, tidied, r.squared, rsq.pvalue = p.value)%>%
+    unnest(tidied)%>%
+    select(-std.error)%>%
+    pivot_wider(names_from = term, values_from = estimate)%>%
+    rename(Slope=Poisson, Intercept=`(Intercept)`)%>%
+    select(id, Intercept, Slope, p.value, r.squared, rsq.pvalue, -statistic)
+  
+  
+  
+  }
+    
+
 
 
 

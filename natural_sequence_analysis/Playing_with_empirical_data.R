@@ -52,7 +52,6 @@ enzyme_branch_lengths <- summarize_branch_lengths(enzymes)
 #How does model+ASRV affect any of the parameters in the branchlength dataframes?---------------------------------
 
 #note:you have to use the money sign to specify the column in the argument:
-#linear_model_function_with_curlies<-function(input_branchlength_df, $dependent_variable_column)
 
 linear_model_function_with_curlies(enzyme_branch_lengths, enzyme_branch_lengths$mean_bl)
 linear_model_function_with_curlies(enzyme_branch_lengths, enzyme_branch_lengths$max_bl)
@@ -73,7 +72,7 @@ function_for_Poisson_FLU_lm (mega_empirical_dataset)->lm_mega_output_tibble
 
 
 
-#visualize the lm output--------------------------
+#visualize the lm output from the map() function--------------------------
 
 
 lm_mega_output_tibble%>%
@@ -85,8 +84,11 @@ lm_mega_output_tibble%>%
  
  
 
+#Let's try to use one huge function to make a lm for any dataset for any two models---------
 
+#Function_for_lm_for_any_dataset_and_any_two_models<- function (input_df, ASRV_T_F, model1, model2)
 
+Function_for_lm_for_any_dataset_and_any_two_models(birds, TRUE, Poisson, WAG)
 
 
 
