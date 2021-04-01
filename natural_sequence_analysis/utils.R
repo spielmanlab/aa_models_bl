@@ -56,18 +56,18 @@ plot_compare_function <- function(input_df, column_to_plot, plot_title, x_label,
 {
   model_order <- c("JTT", "WAG", "LG", "FLU")
   input_df%>%
-    select(model,ASRV,id,{{column_to_plot}})%>% #ude curlies since we are referring to a specific column
+    select(model,ASRV,id,{{column_to_plot}})%>% #use curlies since we are referring to a specific column
     pivot_wider(names_from = model, values_from = {{column_to_plot}})%>%
     pivot_longer(cols=all_of(model_order), 
                  names_to = "other_models", 
-                 values_to = "yaxis")%>%
+                 values_to = "yaxis")%>% #this pivoting sequence allows us to isolate Poisson from the rest of the models
     ggplot(aes(x=Poisson, yaxis))+
     geom_point()+
     theme_classic()+
     facet_grid(vars(ASRV), 
-               vars(fct_relevel(other_models, model_order)))+
+               vars(fct_relevel(other_models, model_order)))+ #want a 4 column by two row output with columns representing models and rows representing ASRV status (T/F)
     geom_smooth(method = "lm")+
-    geom_abline(color = "red") + 
+    geom_abline(color = "red") + #add in the y=x line for easy analysis of the output
     cowplot::panel_border() + 
     theme(strip.background =element_rect(fill="cornflowerblue"))+
     labs(title= plot_title, 
@@ -98,12 +98,12 @@ Poisson_FLU_lm <-function (input_df)
     select(-ASRV) %>% 
     group_by(id, dataset) %>% 
     pivot_wider(names_from = model, values_from = branch_length)%>% #pivot to get branchlength values in columns
-    select(Poisson, FLU)%>%
+    select(Poisson, FLU)%>% #only want these two models
     group_by(dataset, id)%>%
-    nest()%>%
+    nest()%>% #this makes a sort of mini-tibble under each column (list)
     mutate(lm_fit=map(data, lm_with_purr))%>% #run the lm_with_purr function with the 'data' column as the argument
     select(-data)%>%
-    mutate(tidied=map(lm_fit,broom::tidy), glanced=map(lm_fit, broom::glance))%>%
+    mutate(tidied=map(lm_fit,broom::tidy), glanced=map(lm_fit, broom::glance))%>% #this will help with the output being easier to look at
     select(-lm_fit)%>%
     unnest(glanced)%>%
     select(id, tidied, r.squared, rsq.pvalue = p.value)%>%
