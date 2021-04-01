@@ -1,65 +1,43 @@
-#library(tidyverse)
+#Takes one of the original empirical datasets and creates a tibble with several branchlength-related measurements.
+#param: the empirical dataset of interest
+#returns: a tibble with several branchlength-related measurements
+
 
 summarize_branch_lengths <- function(input_df) 
 {
-  input_df %>%
-    group_by(model, ASRV, id)%>%
+  input_df %>% #dataframe of interest
+    group_by(model, ASRV, id)%>% #need to group before summarizing
     summarize(treelength = sum(branch_length),
               mean_bl    = mean(branch_length),
               median_bl  = median(branch_length),
               sd_bl      = sd(branch_length),
               cov_bl     = sd_bl / mean_bl, 
               min_bl     = min(branch_length),
-              max_bl     = max(branch_length)) %>%
+              max_bl     = max(branch_length)) %>% #these are all the measurements we want
     ungroup()
 }
 
-#################################################################
 
 
 
 
 
-# This function will take a dataframe of branchlengths and a response variable and output is the lm as a tibble
+#This function takes one of the branchlength dataframes obtained from the previous function and runs a lm of a column of choice ~ model + ASRV.
+#param x1: the branchlength dataframe of interest
+#param x2: which column to use as the dependent variable
+#returns: a tibble with tukey comparisons between each of the models (JTT, FLU, WAG, Poisson)
 
-#fit_model_ASRV <- function(input_df, response_variable)
-#{
- # input_df %>%
-   # mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling
-  
-  # string works as solution to column argument b/c *IT'S A FORMULA*
- # formula <- paste(
-  #  response_variable, 
-  #  "~", 
-  #  "model + ASRV_modified") %>% as.formula()
-  
-  #lm(response_variable ~ model + ASRV_modified, data = df_for_modeling) %>% 
- # lm(formula, data = df_for_modeling) %>%
-  #  aov() %>%
-  #  TukeyHSD() -> fitted_model
-  
-  #fitted_model$model %>% 
-  #  as_tibble(rownames = "comparison")
-#}
-
-
-
-
-##############################################################################################################
-
-# Another way to accomplish the previous function: This function will take a dataframe of branchlengths and a dependent variable column and the output is the lm as a tibble.
-
-linear_model_function_with_curlies<-function(input_branchlength_df, dependent_variable_column)
+linear_model_function_curlies<-function(input_branchlength_df, dependent_variable_column)
 {
   input_branchlength_df %>%
-    mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling
+    mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling #need to make ASRV non-boolean
   
-  lm({{dependent_variable_column}} ~ model+ ASRV_modified, data= df_for_modeling) %>%
+  lm({{dependent_variable_column}} ~ model+ ASRV_modified, data= df_for_modeling) %>% #since we are referring to a column,we need to use curlies
     aov() %>%
     TukeyHSD()->fitted_model
   
   fitted_model$model %>% 
-    as_tibble(rownames = "comparison")
+    as_tibble(rownames = "comparison") #this will make the output a little nicer
 }
   
 
@@ -67,14 +45,20 @@ linear_model_function_with_curlies<-function(input_branchlength_df, dependent_va
 
 
 #This function is useful for plotting any one of the columns in the branchlength dataframes and comparing each model's output to Poisson's output
+#param x1: Any one of the branchlength dataframes
+#param x2: which column from the branchlength dataframe to plot
+#param x3: plot title
+#param x4: x axis label
+#param x5: y-axis label
+#returns: a plot that is faceted by ASRV and and shows Poisson's estimate along the X axis and every other model's estimate along the Y axis.
 
 plot_compare_function <- function(input_df, column_to_plot, plot_title, x_label, y_label)
 {
   model_order <- c("JTT", "WAG", "LG", "FLU")
   input_df%>%
-    select(model,ASRV,id,{{column_to_plot}})%>%
+    select(model,ASRV,id,{{column_to_plot}})%>% #ude curlies since we are referring to a specific column
     pivot_wider(names_from = model, values_from = {{column_to_plot}})%>%
-    pivot_longer(cols=all_of(model_order), # sshhhhh 
+    pivot_longer(cols=all_of(model_order), 
                  names_to = "other_models", 
                  values_to = "yaxis")%>%
     ggplot(aes(x=Poisson, yaxis))+
@@ -91,40 +75,33 @@ plot_compare_function <- function(input_df, column_to_plot, plot_title, x_label,
 }
 
 
-#lets try to purr-------------------------------------------------------------------------------
-#want a lm for each bird ID. The output will be id, Intercept, Slope, pvalue (of intercept or slope), rsquared, and rsquared pvalue)
-#end up with NA's but I like the wider version better since Intercept and slope are their own columns
+
+#This function is simply a lm of FLU~Poisson that will be utilized as a piece of a later function
+#param: a dataframe that contains FLU and Poisson branchlengths
+#returns: a lm of FLU ~ Poisson
 
 
-
-
- #Create a mega dataset with birds, mammals, and enzymes 
-birds$id=as.character(birds$id)#had to do this to bind the rows
-
-
-bind_rows(enzymes, mammals, birds)->mega_empirical_dataset
-
-
-
-lm_function_with_purr<-function(df)
+lm_with_purr<-function(df)
 {
   lm(FLU~Poisson, data=df)
   
 }
 
+#This function takes the bird, enzyme, mammal, or mega dataframe and creates an lm output for FLU~Poisson branchlength estimates 
+#param x1: the dataframe of interest (birds, mammals, enzymes, or mega_empirical_dataset)
+#returns: A tibble with the intercept and slope of the lm along with corresponding p values and r squared values. Every unique id has 2 rows with one dedicated to slope and the other to intercept
 
-#This function takes the bird, enzyme, mammal, or mega dataframe and creates an lm output for FLU~Poisson 
-function_for_Poisson_FLU_lm <-function (input_df)
+Poisson_FLU_lm <-function (input_df)
 { 
   input_df%>%
     filter(ASRV == TRUE) %>% 
     select(-ASRV) %>% 
     group_by(id, dataset) %>% 
-    pivot_wider(names_from = model, values_from = branch_length)%>%
+    pivot_wider(names_from = model, values_from = branch_length)%>% #pivot to get branchlength values in columns
     select(Poisson, FLU)%>%
     group_by(dataset, id)%>%
     nest()%>%
-    mutate(lm_fit=map(data, lm_function_with_purr))%>%
+    mutate(lm_fit=map(data, lm_with_purr))%>% #run the lm_with_purr function with the 'data' column as the argument
     select(-data)%>%
     mutate(tidied=map(lm_fit,broom::tidy), glanced=map(lm_fit, broom::glance))%>%
     select(-lm_fit)%>%
@@ -132,23 +109,36 @@ function_for_Poisson_FLU_lm <-function (input_df)
     select(id, tidied, r.squared, rsq.pvalue = p.value)%>%
     unnest(tidied)%>%
     select(-std.error)%>%
-    pivot_wider(names_from = term, values_from = estimate)%>%
+    pivot_wider(names_from = term, values_from = estimate)%>% #pivoting wider here makes one row for each id dedicated to intercept, and the other to slope
     rename(Slope=Poisson, Intercept=`(Intercept)`)%>%
     select(id, Intercept, Slope, p.value, r.squared, rsq.pvalue, -statistic)
   
 }
 
 
-#lets up the game again, make a function that has which models we choose to lm as variables----------------
 
-lm_function_with_purr_curlies<-function(model1, model2, df)
+
+
+#This function is meant to be used as part of a later function (and I am unsure if it is even usable) but it is meant to be an lm of (model~model) where possible models are (JTT, FLU, WAG, Poisson, LG) 
+#param x1: the first model of interest
+#param x2: the second model of interest
+#param x3: a dataframe that contains branchlength estimates from the models of interest
+#returns: lm of (model~model)
+
+lm_any_model<-function(model1, model2, df)
 {
   lm({{model1}}~{{model2}}, data=df)
 }
 
 
+#this function is a work in progress but the goal is to perform an lm utilizing branchlength estimates for any two models (model1~model2) where models are (JTT, FLU, LG, WAG, Poisson).
+#param x1: dataframe (birds, mammals, enzymes, or mega_empirical_dataset)
+#param x2: True or false for ASRV
+#param x3: first model (will serve as dependent var)
+#param x4: second model (will serve as independent var)
+#returns: A tibble with the intercept and slope of the lm along with corresponding p values and r squared values. Every unique id has 2 rows with one dedicated to slope and the other to intercept
 
-Function_for_lm_for_any_dataset_and_any_two_models<- function (input_df, ASRV_T_F, model1, model2)
+lm_two_models<- function (input_df, ASRV_T_F, model1, model2)
 {
     input_df%>%
     filter(ASRV == ASRV_T_F) %>% 
@@ -158,7 +148,7 @@ Function_for_lm_for_any_dataset_and_any_two_models<- function (input_df, ASRV_T_
     select({{model1}}, {{model2}})%>%
     group_by(dataset, id)%>%
     nest()%>%
-    mutate(lm_fit=map(data,lm_function_with_purr_curlies))%>%
+    mutate(lm_fit=map(data,lm_any_model))%>%
     select(-data)%>%
     mutate(tidied=map(lm_fit,broom::tidy), glanced=map(lm_fit, broom::glance))%>%
     select(-lm_fit)%>%
