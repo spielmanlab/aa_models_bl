@@ -5,3 +5,4 @@
 .vscode/
 **/Rplots.pdf
 .DS_Store
+.Rproj.user

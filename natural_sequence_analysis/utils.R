@@ -1,8 +1,6 @@
 #Takes one of the original empirical datasets and creates a tibble with several branchlength-related measurements.
-#param: the empirical dataset of interest
+#param input_df: the empirical dataset of interest
 #returns: a tibble with several branchlength-related measurements
-
-
 summarize_branch_lengths <- function(input_df) 
 {
   input_df %>% #dataframe of interest
@@ -23,10 +21,9 @@ summarize_branch_lengths <- function(input_df)
 
 
 #This function takes one of the branchlength dataframes obtained from the previous function and runs a lm of a column of choice ~ model + ASRV.
-#param x1: the branchlength dataframe of interest
-#param x2: which column to use as the dependent variable
+#param input_branchlength_df: the branchlength dataframe of interest
+#param dependent_variable_column: which column to use as the dependent variable
 #returns: a tibble with tukey comparisons between each of the models (JTT, FLU, WAG, Poisson)
-
 linear_model_function_curlies<-function(input_branchlength_df, dependent_variable_column)
 {
   input_branchlength_df %>%
@@ -45,13 +42,12 @@ linear_model_function_curlies<-function(input_branchlength_df, dependent_variabl
 
 
 #This function is useful for plotting any one of the columns in the branchlength dataframes and comparing each model's output to Poisson's output
-#param x1: Any one of the branchlength dataframes
-#param x2: which column from the branchlength dataframe to plot
-#param x3: plot title
-#param x4: x axis label
-#param x5: y-axis label
+#param input_df: Any one of the branchlength dataframes
+#param column_to_plot: which column from the branchlength dataframe to plot
+#param plot_title: plot title
+#param x_label: x axis label
+#param y_label: y-axis label
 #returns: a plot that is faceted by ASRV and and shows Poisson's estimate along the X axis and every other model's estimate along the Y axis.
-
 plot_compare_function <- function(input_df, column_to_plot, plot_title, x_label, y_label)
 {
   model_order <- c("JTT", "WAG", "LG", "FLU")
@@ -77,20 +73,17 @@ plot_compare_function <- function(input_df, column_to_plot, plot_title, x_label,
 
 
 #This function is simply a lm of FLU~Poisson that will be utilized as a piece of a later function
-#param: a dataframe that contains FLU and Poisson branchlengths
+#param df: a dataframe that contains FLU and Poisson branchlengths
 #returns: a lm of FLU ~ Poisson
-
-
 lm_with_purr<-function(df)
 {
   lm(FLU~Poisson, data=df)
   
 }
 
-#This function takes the bird, enzyme, mammal, or mega dataframe and creates an lm output for FLU~Poisson branchlength estimates 
-#param x1: the dataframe of interest (birds, mammals, enzymes, or mega_empirical_dataset)
+#This function takes the bird, enzyme, mammal, or mega dataframe and creates an lm output for FLU~Poisson branchlength estimates
+#param input_df: the dataframe of interest (birds, mammals, enzymes, or mega_empirical_dataset)
 #returns: A tibble with the intercept and slope of the lm along with corresponding p values and r squared values. Every unique id has 2 rows with one dedicated to slope and the other to intercept
-
 Poisson_FLU_lm <-function (input_df)
 { 
   input_df%>%
@@ -124,7 +117,6 @@ Poisson_FLU_lm <-function (input_df)
 #param x2: the second model of interest
 #param x3: a dataframe that contains branchlength estimates from the models of interest
 #returns: lm of (model~model)
-
 lm_any_model<-function(model1, model2, df)
 {
   lm({{model1}}~{{model2}}, data=df)
@@ -137,7 +129,6 @@ lm_any_model<-function(model1, model2, df)
 #param x3: first model (will serve as dependent var)
 #param x4: second model (will serve as independent var)
 #returns: A tibble with the intercept and slope of the lm along with corresponding p values and r squared values. Every unique id has 2 rows with one dedicated to slope and the other to intercept
-
 lm_two_models<- function (input_df, ASRV_T_F, model1, model2)
 {
     input_df%>%

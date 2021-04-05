@@ -7,8 +7,6 @@ source("utils.R")
 
 # Define important variables and make important column adjustments---------------------------------------------------
 conditions_per_dataset <- 10  # 5 models * 2 ASRV = 10
-birds$id=as.character(birds$id)
-
 
 
 # Load datasets --------------------------------------------------------------------------------------------------
@@ -24,18 +22,18 @@ enzymes_file <- file.path(path_to_data, "enzyme_empirical_branch_lengths.csv")
 
 mammals <- read_csv(mammals_file)
 enzymes <- read_csv(enzymes_file)
-birds   <- read_csv(birds_file)
+birds   <- read_csv(birds_file, col_types = cols(id = col_character())) # make sure ids are character (they are represented by numbers in birds csv )
+
 mega_empirical_dataset<-bind_rows(enzymes, mammals, birds)
-# Wrangle into branch lengths tibbles using functions ------------------------------------------------------------
 
 
+# Wrangle into branch lengths tibbles using functions------------------------------------------------------------
 bird_branch_lengths <- summarize_branch_lengths(birds)
 mammal_branch_lengths <- summarize_branch_lengths(mammals)
 enzyme_branch_lengths <- summarize_branch_lengths(enzymes)
 
+
 #How does model+ASRV affect any of the parameters in the branchlength dataframes?---------------------------------
-
-
 linear_model_function_curlies(enzyme_branch_lengths, enzyme_branch_lengths$mean_bl)
 linear_model_function_curlies(enzyme_branch_lengths, enzyme_branch_lengths$max_bl)
 linear_model_function_curlies(enzyme_branch_lengths, enzyme_branch_lengths$treelength)
