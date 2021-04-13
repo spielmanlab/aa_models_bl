@@ -113,9 +113,9 @@ Poisson_FLU_lm <-function (input_df)
 
 
 #This function is meant to be used as part of a later function (and I am unsure if it is even usable) but it is meant to be an lm of (model~model) where possible models are (JTT, FLU, WAG, Poisson, LG) 
-#param x1: the first model of interest
-#param x2: the second model of interest
-#param x3: a dataframe that contains branchlength estimates from the models of interest
+#param model 1: the first model of interest
+#param model 2: the second model of interest
+#param df: a dataframe that contains branchlength estimates from the models of interest
 #returns: lm of (model~model)
 lm_any_model<-function(model1, model2, df)
 {
@@ -124,10 +124,10 @@ lm_any_model<-function(model1, model2, df)
 
 
 #this function is a work in progress but the goal is to perform an lm utilizing branchlength estimates for any two models (model1~model2) where models are (JTT, FLU, LG, WAG, Poisson).
-#param x1: dataframe (birds, mammals, enzymes, or mega_empirical_dataset)
-#param x2: True or false for ASRV
-#param x3: first model (will serve as dependent var)
-#param x4: second model (will serve as independent var)
+#param input_df: dataframe (birds, mammals, enzymes, or mega_empirical_dataset)
+#param ASRV_T_F: True or false for ASRV
+#param model1: first model (will serve as dependent var)
+#param model2: second model (will serve as independent var)
 #returns: A tibble with the intercept and slope of the lm along with corresponding p values and r squared values. Every unique id has 2 rows with one dedicated to slope and the other to intercept
 lm_two_models<- function (input_df, ASRV_T_F, model1, model2)
 {
