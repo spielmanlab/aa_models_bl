@@ -1,0 +1,59 @@
+---
+title: "Branch length summary stats analysis"
+output: 
+  prettydoc::html_pretty:
+    theme: "cayman"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo = TRUE, include = TRUE)
+library(tidyverse)
+library(prettydoc)
+```
+
+```{r source utils.R, include=FALSE}
+source("utils.R", local = knitr::knit_global())
+```
+
+## Goal
+The primary goal of this analysis is to determine whether branch length summary statistics differ across protein models. This will be done mainly with code that visualizes these statistics. 
+
+```{r read in the data, include=FALSE}
+path_to_data <- "./"
+
+birds_file <- file.path(path_to_data, "bird_empirical_branch_lengths.csv")
+mammals_file <- file.path(path_to_data, "mammal_empirical_branch_lengths.csv")
+enzymes_file <- file.path(path_to_data, "enzyme_empirical_branch_lengths.csv")
+
+
+
+mammals <- read_csv(mammals_file)
+enzymes <- read_csv(enzymes_file)
+birds   <- read_csv(birds_file)
+
+birds$id=as.character(birds$id)
+mega_empirical_dataset<-bind_rows(enzymes, mammals, birds)
+
+```
+
+The datasets are too large, so let's make smaller datasets comprized of three of each id from each dataset
+```{r make mini datasets to work with}
+mammals%>%
+  filter(id%in%c("ENSG00000000003_AA","ENSG00000000005_AA", "ENSG00000000457_AA"))->mammals_3_id
+
+birds%>%
+  filter(id%in%c("100", "1000", "1003"))->birds_3_id
+
+enzymes%>%
+  filter(id%in%c("13PK_A", "1A16_A", "1CL1_A"))->enzymes_3_id
+
+print(birds_3_id)
+print(enzymes_3_id)
+print(mammals_3_id)
+```
+
+## Analysis
+Okay, now that we have our fun mini-datasets (and the utils script has been sourced), let's begin to see how the branch length estimates look for each!
+
+```{r analyze branch lengths, include=TRUE}
+```
