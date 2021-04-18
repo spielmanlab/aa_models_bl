@@ -36,6 +36,7 @@ mega_empirical_dataset<-bind_rows(enzymes, mammals, birds)
 
 ```
 
+### First Step: Create Smaller Datasets
 The datasets are too large, so let's make smaller datasets comprized of three of each id from each dataset
 ```{r make mini datasets to work with}
 mammals%>%
@@ -47,13 +48,37 @@ birds%>%
 enzymes%>%
   filter(id%in%c("13PK_A", "1A16_A", "1CL1_A"))->enzymes_3_id
 
-print(birds_3_id)
-print(enzymes_3_id)
-print(mammals_3_id)
 ```
 
 ## Analysis
-Okay, now that we have our fun mini-datasets (and the utils script has been sourced), let's begin to see how the branch length estimates look for each!
+Okay, now that we have our fun mini-datasets, let's begin to see how the branch length estimates look for each!
 
-```{r analyze branch lengths, include=TRUE}
+```{r summarize branch lengths, include=FALSE}
+summarize_branch_lengths(mammals_3_id)->mammals_3_bl
+summarize_branch_lengths(enzymes_3_id)->enzymes_3_bl
+summarize_branch_lengths(birds_3_id)->birds_3_bl
+
+mega_mini_bl<-bind_rows(mammals_3_bl,enzymes_3_bl,birds_3_bl)
+
+
+
 ```
+
+```{r, vizualize branch lengths, include=TRUE}
+mega_mini_bl%>%
+  select(mean_bl, model, id, ASRV)%>%
+  filter(ASRV=="TRUE")%>%
+  group_by(model, id)%>%
+  ggplot(aes(x=model, y=mean_bl, fill=model))+
+  geom_violin()+
+  geom_point()+
+  stat_summary()+
+  scale_fill_brewer(palette = "Dark2")+
+  labs(x="Model", y="Mean Branch Lengths", title="Violin Plot of Mean Branch Length Estimates From Each Model")
+
+```
+From this, we see that FLU has higher branch length estimates on average for the three selected id's. 
+
+
+
+
