@@ -6,13 +6,13 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo = TRUE, include = TRUE)
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo= TRUE, include = TRUE)
 library(tidyverse)
 library(prettydoc)
 ```
 
 ```{r source utils.R, include=FALSE}
-source("utils.R", local = knitr::knit_global())
+sys.source("utils.R", envir = knitr::knit_global())
 ```
 
 ## Goal
@@ -43,7 +43,7 @@ mammals%>%
   filter(id%in%c("ENSG00000000003_AA","ENSG00000000005_AA", "ENSG00000000457_AA"))->mammals_3_id
 
 birds%>%
-  filter(id%in%c("100", "1000", "1003"))->birds_3_id
+  filter(id%in%c("100", "1000", "10003"))->birds_3_id
 
 enzymes%>%
   filter(id%in%c("13PK_A", "1A16_A", "1CL1_A"))->enzymes_3_id
@@ -60,25 +60,65 @@ summarize_branch_lengths(birds_3_id)->birds_3_bl
 
 mega_mini_bl<-bind_rows(mammals_3_bl,enzymes_3_bl,birds_3_bl)
 
-
+mega_mini_bl%>%
+  mutate(dataset= case_when(id%in%c("ENSG00000000003_AA", "ENSG00000000005_AA", "ENSG00000000457_AA") ~"mammals",
+                            id%in%c("1CL1_A", "1A16_A", "13PK_A") ~"enzymes",
+                            id%in%c("1000","100", "10003") ~"birds"))-> mega_mini_bl2
 
 ```
 
-```{r, vizualize branch lengths, include=TRUE}
-mega_mini_bl%>%
-  select(mean_bl, model, id, ASRV)%>%
+
+```{r define function for bl measurements, include=FALSE}
+
+Violin_bl_measurements<-function(bl_df, measurement, y_axis_title, plot_title)
+{
+bl_df%>%
+  select({{measurement}}, model, id, ASRV, dataset)%>%
   filter(ASRV=="TRUE")%>%
-  group_by(model, id)%>%
-  ggplot(aes(x=model, y=mean_bl, fill=model))+
+  group_by(model, id, dataset)%>%
+  ggplot(aes(x=model, y={{measurement}}, fill=model))+
   geom_violin()+
   geom_point()+
   stat_summary()+
   scale_fill_brewer(palette = "Dark2")+
-  labs(x="Model", y="Mean Branch Lengths", title="Violin Plot of Mean Branch Length Estimates From Each Model")
+  labs(x="Model", y=y_axis_title, title=plot_title)
+}
 
 ```
-From this, we see that FLU has higher branch length estimates on average for the three selected id's. 
 
+```{r vizualize branch lengths}
+
+
+Violin_bl_measurements(mega_mini_bl2, treelength, "Treelength", "Estimated Treelengths for Selected Id's")
+Violin_bl_measurements(mega_mini_bl2, mean_bl, "Mean_bl", "Estimated Mean Branchlengths for Selected Id's")
+Violin_bl_measurements(mega_mini_bl2, max_bl, "Max_bl", "Estimated Maximum Branchlengths for Selected Id's")
+
+```
+<br><br>
+From this, we see that FLU appears to overestimate the branchlength-related measurements while Poisson underestimates!
+<br><br>
+
+### Now, Let's address our goal by utilizing linear models to determine if branch length summary statistics do indeed differ across protein models.
+
+```{r, linear model statistic~ protein_model + ASRV}
+linear_model_function_curlies<-function(input_branchlength_df, dependent_variable_column)
+{
+  input_branchlength_df %>%
+    mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling #need to make ASRV non-boolean
+  
+  lm({{dependent_variable_column}} ~ model+ dataset+ ASRV_modified, data= df_for_modeling) %>% #since we are referring to a column,we need to use curlies
+    aov() %>%
+    TukeyHSD()->fitted_model
+  
+  fitted_model$model %>% 
+    as_tibble(rownames = "Compare") #this will make the output a little nicer
+}
+  
+linear_model_function_curlies(mega_mini_bl2, mega_mini_bl$mean_bl)
+linear_model_function_curlies(mega_mini_bl2, mega_mini_bl$treelength)
+linear_model_function_curlies(mega_mini_bl2, mega_mini_bl$max_bl)
+```
+<br><br>
 
 
 
