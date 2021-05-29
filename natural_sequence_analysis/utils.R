@@ -158,6 +158,32 @@ lm_two_models<- function (input_df, ASRV_T_F, model1, model2)
 
 
 
+Violin_bl_measurements<-function(bl_df, measurement, y_axis_title, plot_title)
+{
+  bl_df%>%
+    select({{measurement}}, model, id, ASRV, dataset)%>%
+    filter(ASRV=="TRUE")%>%
+    group_by(model, id, dataset)%>%
+    ggplot(aes(x=model, y={{measurement}}, fill=model))+
+    geom_violin()+
+    geom_point()+
+    stat_summary()+
+    scale_fill_brewer(palette = "Dark2")+
+    labs(x="Model", y=y_axis_title, title=plot_title)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
