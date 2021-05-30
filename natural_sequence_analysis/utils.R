@@ -86,7 +86,7 @@ lm_with_purr<-function(df)
 #returns: A tibble with the intercept and slope of the lm along with corresponding p values and r squared values. Every unique id has 2 rows with one dedicated to slope and the other to intercept
 Poisson_FLU_lm <-function (input_df)
 { 
-  input_df%>%
+  input_df%>%lm
     filter(ASRV == TRUE) %>% 
     select(-ASRV) %>% 
     group_by(id, dataset) %>% 
@@ -157,17 +157,21 @@ lm_two_models<- function (input_df, ASRV_T_F, model1, model2)
     
 
 
-
+#This function is used to create violin plots for any of the the branch length summary stats across models.
+#param bl_df: a dataframe that contains branchlength summary statistics (eg. mega_mini_bl2)
+#param measurement: the branchlength summary statistic of interest (treelength, mean_bl, etc)
+#param y_axis_title: will be the summary statistic of interest
+#param plot_title: will also depend on the summary statistic being plotted.
 Violin_bl_measurements<-function(bl_df, measurement, y_axis_title, plot_title)
 {
   bl_df%>%
-    select({{measurement}}, model, id, ASRV, dataset)%>%
+    select({{measurement}}, model, id, ASRV, dataset)%>% #measurement refers to a specific column so curlies 
     filter(ASRV=="TRUE")%>%
     group_by(model, id, dataset)%>%
-    ggplot(aes(x=model, y={{measurement}}, fill=model))+
-    geom_violin()+
-    geom_point()+
-    stat_summary()+
+    ggplot(aes(x=model, y={{measurement}}, fill=model))+ #once again curlies here bc referring to a specific column
+    geom_violin()+ #could also use a boxplot here, just want to quickly see the distribution
+    geom_point()+# since there are not many points this is helpful 
+    stat_summary()+ #this will show that nice mean dot with lines for se
     scale_fill_brewer(palette = "Dark2")+
     labs(x="Model", y=y_axis_title, title=plot_title)
 }
