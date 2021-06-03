@@ -1,13 +1,5 @@
----
-title: "README.md"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ## Goals
+
 The primary goals for this project moving forward are to answer the following questions: 
  <br><br>
 	1.) **Do branch length summary statistics differ across protein models?**
