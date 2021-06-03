@@ -8,28 +8,23 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo= TRUE, include = TRUE)
 library(tidyverse)
-library(prettydoc)
-```
-
-```{r source utils.R, include=FALSE}
-sys.source("utils.R", envir = knitr::knit_global())
+source("utils.R")
+path_to_data <- "./"
 ```
 
 ## Goal
 The primary goal of this analysis is to determine whether branch length summary statistics differ across protein models. This will be done mainly with code that visualizes these statistics. 
 
-```{r read in the data, include=FALSE}
-path_to_data <- "./"
+```{r read in the data, message=FALSE}
+
 
 birds_file <- file.path(path_to_data, "bird_empirical_branch_lengths.csv")
 mammals_file <- file.path(path_to_data, "mammal_empirical_branch_lengths.csv")
 enzymes_file <- file.path(path_to_data, "enzyme_empirical_branch_lengths.csv")
 
-
-
-mammals <- read_csv(mammals_file)
-enzymes <- read_csv(enzymes_file)
-birds   <- read_csv(birds_file)
+mammals <- read_csv(mammals_file) %>% mutate(type = "mammals")
+enzymes <- read_csv(enzymes_file) %>% mutate(type = "enzymes")
+birds   <- read_csv(birds_file) %>% mutate(type = "birds")
 
 birds$id=as.character(birds$id)
 mega_empirical_dataset<-bind_rows(enzymes, mammals, birds)
@@ -37,10 +32,12 @@ mega_empirical_dataset<-bind_rows(enzymes, mammals, birds)
 ```
 
 ### First Step: Create Smaller Datasets
-The datasets are too large, so let's make smaller datasets comprized of three of each id from each dataset
+The datasets are too large, so let's make smaller datasets comprised of three of each id from each dataset
 ```{r make mini datasets to work with}
+
+mammal_ids <- c("ENSG00000000003_AA","ENSG00000000005_AA", "ENSG00000000457_AA")
 mammals%>%
-  filter(id%in%c("ENSG00000000003_AA","ENSG00000000005_AA", "ENSG00000000457_AA"))->mammals_3_id
+  filter(id %in% mammal_ids)->mammals_3_id
 
 birds%>%
   filter(id%in%c("100", "1000", "10003"))->birds_3_id
@@ -61,9 +58,9 @@ summarize_branch_lengths(birds_3_id)->birds_3_bl
 mega_mini_bl<-bind_rows(mammals_3_bl,enzymes_3_bl,birds_3_bl)
 
 mega_mini_bl%>%
-  mutate(dataset= case_when(id%in%c("ENSG00000000003_AA", "ENSG00000000005_AA", "ENSG00000000457_AA") ~"mammals",
-                            id%in%c("1CL1_A", "1A16_A", "13PK_A") ~"enzymes",
-                            id%in%c("1000","100", "10003") ~"birds"))-> mega_mini_bl2
+  mutate(dataset= case_when(id %in% mammal_ids ~"mammals",
+                            id %in% c("1CL1_A", "1A16_A", "13PK_A") ~"enzymes",
+                            id %in% c("1000","100", "10003") ~"birds"))-> mega_mini_bl2
    
 
 ```
@@ -75,7 +72,7 @@ Violin_bl_measurements<-function(bl_df, measurement, y_axis_title, plot_title)
 {
 bl_df%>%
   select({{measurement}}, model, id, ASRV, dataset)%>%
-  filter(ASRV=="TRUE")%>%
+  filter(ASRV==TRUE)%>%
   group_by(model, id, dataset)%>%
   ggplot(aes(x=model, y={{measurement}}, fill=model))+
   geom_violin()+
