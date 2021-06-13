@@ -13,47 +13,48 @@ path_to_data <- "./"
 ```
 
 ## Goal
-The primary goal of this analysis is to determine whether branch length summary statistics differ across protein models. This will be done mainly with code that visualizes these statistics. 
+The primary goal of this analysis is to determine whether branch length summary statistics differ across protein models.
 
-```{r read in the data, message=FALSE}
+## First let's take a look at our smaller versions of the enzyme, mammal, and bird datasets.
+
+```{r read in the data and make smaller datasets, message=FALSE, echo=FALSE}
 
 
 birds_file <- file.path(path_to_data, "bird_empirical_branch_lengths.csv")
 mammals_file <- file.path(path_to_data, "mammal_empirical_branch_lengths.csv")
 enzymes_file <- file.path(path_to_data, "enzyme_empirical_branch_lengths.csv")
 
-mammals <- read_csv(mammals_file) %>% mutate(type = "mammals")
-enzymes <- read_csv(enzymes_file) %>% mutate(type = "enzymes")
-birds   <- read_csv(birds_file) %>% mutate(type = "birds")
-
-birds$id=as.character(birds$id)
-mega_empirical_dataset<-bind_rows(enzymes, mammals, birds)
-
-```
-
-### First Step: Create Smaller Datasets
-The datasets are too large, so let's make smaller datasets comprised of three of each id from each dataset
-```{r make mini datasets to work with}
-
 mammal_ids <- c("ENSG00000000003_AA","ENSG00000000005_AA", "ENSG00000000457_AA")
-mammals%>%
-  filter(id %in% mammal_ids)->mammals_3_id
 
-birds%>%
-  filter(id%in%c("100", "1000", "10003"))->birds_3_id
+bird_ids<- c("100", "1000", "10003")
 
-enzymes%>%
-  filter(id%in%c("13PK_A", "1A16_A", "1CL1_A"))->enzymes_3_id
+enzyme_ids<- c("13PK_A", "1A16_A", "1CL1_A")
 
+mammals_mini <- read_csv(mammals_file) %>% mutate(dataset = "mammals")%>%
+  filter(id %in% mammal_ids)
+
+enzymes_mini <- read_csv(enzymes_file) %>% mutate(dataset = "enzymes")%>%
+  filter(id %in% enzyme_ids)
+
+birds_mini <- read_csv(birds_file) %>% mutate(dataset = "birds")%>%
+  filter(id %in% bird_ids)
+ 
+birds_mini$id=as.character(birds_mini$id)
+
+bind_rows(mammals_mini, enzymes_mini, birds_mini)->mega_mini_bl
+
+summarize_branch_lengths(mega_mini_bl)->mega_mini_bl2
+
+print (mega_mini_bl2)
 ```
 
 ## Analysis of Branchlength Differences Between Models 
 Okay, now that we have our fun mini-datasets, let's begin to see how the branch length estimates look!
 
-```{r summarize branch lengths, include=FALSE}
-summarize_branch_lengths(mammals_3_id)->mammals_3_bl
-summarize_branch_lengths(enzymes_3_id)->enzymes_3_bl
-summarize_branch_lengths(birds_3_id)->birds_3_bl
+```{r summarize branch lengths, include=TRUE}
+summarize_branch_lengths(mammals_mini)->mammals_3_bl
+summarize_branch_lengths(enzymes_mini)->enzymes_3_bl
+summarize_branch_lengths(birds_mini)->birds_3_bl #want to keep each of these seperate just in case they are useful in the future
 
 mega_mini_bl<-bind_rows(mammals_3_bl,enzymes_3_bl,birds_3_bl)
 
