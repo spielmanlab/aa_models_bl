@@ -1,5 +1,5 @@
 ---
-title: "Branch length summary stats analysis"
+title: "Branch Length Summary Stats Analysis"
 output: 
   prettydoc::html_pretty:
     theme: "cayman"
@@ -15,7 +15,7 @@ path_to_data <- "./"
 ## Goal
 The primary goal of this analysis is to determine whether branch length summary statistics differ across protein models.
 
-## First let's take a look at our smaller versions of the enzyme, mammal, and bird datasets.
+## First let's take a look at some sample id's from the bird, enzyme, and mammal data.
 
 ```{r read in the data and make smaller datasets, message=FALSE, echo=FALSE}
 
@@ -30,44 +30,39 @@ bird_ids<- c("100", "1000", "10003")
 
 enzyme_ids<- c("13PK_A", "1A16_A", "1CL1_A")
 
-mammals_mini <- read_csv(mammals_file) %>% mutate(dataset = "mammals")%>%
-  filter(id %in% mammal_ids)
-
-enzymes_mini <- read_csv(enzymes_file) %>% mutate(dataset = "enzymes")%>%
-  filter(id %in% enzyme_ids)
-
-birds_mini <- read_csv(birds_file) %>% mutate(dataset = "birds")%>%
-  filter(id %in% bird_ids)
+mammals_mini <- read_csv(mammals_file) %>% 
+  filter(id %in% mammal_ids)%>%
+  mutate("dataset" = "mammals")
  
+
+enzymes_mini <- read_csv(enzymes_file) %>% 
+   filter(id %in% enzyme_ids)%>%
+   mutate(dataset = "enzymes")
+  
+
+birds_mini <- read_csv(birds_file) %>% 
+  filter(id %in% bird_ids)%>%
+  mutate(dataset = "birds")
+ 
+
+
 birds_mini$id=as.character(birds_mini$id)
+enzymes_mini$id=as.character(enzymes_mini$id) #need to do this in order to bind the rows
+mammals_mini$id=as.character(mammals_mini$id)
 
-bind_rows(mammals_mini, enzymes_mini, birds_mini)->mega_mini_bl
+bind_rows(mammals_mini, enzymes_mini, birds_mini)->mega_mini_bl #this is just one big data frame consisting of the three id's
 
-summarize_branch_lengths(mega_mini_bl)->mega_mini_bl2
+summarize_branch_lengths(mega_mini_bl)->mega_mini_bl2 #this data frame will have branch length summary statistics
 
-print (mega_mini_bl2)
+print(mega_mini_bl2)
+
 ```
+This dataset contains branch length summary statistics (columns) for three selcted id's from the bird, mammal, and enzyme datasets. Moving forward, we will use this dataset to determine if these summary statistics differ across protein models (JTT, WAG, FLU, Poisson, and LG). 
 
 ## Analysis of Branchlength Differences Between Models 
-Okay, now that we have our fun mini-datasets, let's begin to see how the branch length estimates look!
+Okay, now that we have our mini-dataset, let's begin to see how the branch length summary stats look!
 
-```{r summarize branch lengths, include=TRUE}
-summarize_branch_lengths(mammals_mini)->mammals_3_bl
-summarize_branch_lengths(enzymes_mini)->enzymes_3_bl
-summarize_branch_lengths(birds_mini)->birds_3_bl #want to keep each of these seperate just in case they are useful in the future
-
-mega_mini_bl<-bind_rows(mammals_3_bl,enzymes_3_bl,birds_3_bl)
-
-mega_mini_bl%>%
-  mutate(dataset= case_when(id %in% mammal_ids ~"mammals",
-                            id %in% c("1CL1_A", "1A16_A", "13PK_A") ~"enzymes",
-                            id %in% c("1000","100", "10003") ~"birds"))-> mega_mini_bl2
-   
-
-```
-
-
-```{r define function for bl measurements, include=FALSE}
+```{r violin function for bl measurements, echo=FALSE}
 
 Violin_bl_measurements<-function(bl_df, measurement, y_axis_title, plot_title)
 {
@@ -85,21 +80,18 @@ bl_df%>%
 
 ```
 
-```{r vizualize branch lengths}
-
-
+```{r vizualize branch lengths violin, echo=FALSE}
 Violin_bl_measurements(mega_mini_bl2, treelength, "Treelength", "Estimated Treelengths for Selected Id's")
 Violin_bl_measurements(mega_mini_bl2, mean_bl, "Mean_bl", "Estimated Mean Branchlengths for Selected Id's")
 Violin_bl_measurements(mega_mini_bl2, max_bl, "Max_bl", "Estimated Maximum Branchlengths for Selected Id's")
-
 ```
 <br><br>
-From this, we see that FLU appears to overestimate the branchlength-related measurements while Poisson underestimates!
+From this, we first see that FLU *appears* to overestimate the branch length related measurements while Poisson underestimates. The next noticable aspect of these figures is that these distributions appear to be bi-modal. In each of the violins, there are points grouped both at the top and bottom, but why? It can not be due to ASRV being different, since ASRV is `TRUE` for all points in these figures. This leads us to beleive there is a difference in the *datasets themselves* that is causing us to see this bimodal distribution. A quick look at the dataset in the beginning of this document supports our suspicion, as the `enzymes` summary statistics are much higher than those of `birds` or `mammals`. Perhaps it would be interesting to run the analysis without the enzyme data, to see how the models perform under lower-varience conditions. Maybe the overestimation by FLU and the underestimation by Poisson are due to the high variation alone, in which case we could approximate *how much* varience these models can "handle" before they are no longer reliable. 
 <br><br>
 
-### Now, Let's address our goal by utilizing linear models to determine if branch length summary statistics do indeed differ across protein models.
+### Now, Let's continue to address our goal, but this time by utilizing linear models to determine if branch length *summary statistics* do indeed differ across protein models. Specifically, we will look at mean branch length, treelength, and max branchlength.
 
-```{r, linear model statistic~ protein_model + ASRV+ dataset}
+```{r linear model statistic~ protein_model + ASRV+ dataset, echo=FALSE}
 linear_model_function_curlies<-function(input_branchlength_df, dependent_variable_column)
 {
   input_branchlength_df %>%
@@ -112,19 +104,30 @@ linear_model_function_curlies<-function(input_branchlength_df, dependent_variabl
   fitted_model$model %>% 
     as_tibble(rownames = "Compare") #this will make the output a little nicer
 }
-  
+
+```
+#### Mean Branchn Length
+``` {r lm for mean bl, echo=FALSE}
 linear_model_function_curlies(mega_mini_bl2, mega_mini_bl2$mean_bl)
+```
+
+#### Treelength
+```{r lm for treelength, echo=FALSE}
 linear_model_function_curlies(mega_mini_bl2, mega_mini_bl2$treelength)
+```
+
+#### Max Branch Length
+```{r lm for max bl, echo=FALSE}
 linear_model_function_curlies(mega_mini_bl2, mega_mini_bl2$max_bl)
 ```
-<br><br>
-From this, the only significant difference that we find between the models' estimates of these summary statistics is between the treelength estimates of Poisson and FLU (p=0.0104). This makes sense when going back to the violin plots above, where the difference in treelength estimates between Poisson and FLU can be visualized!
-<br><br>
 
-### Analysis of Datasets
-Thus far, we have really only focused on the differences that exist in branchlength estimates between models, but what differences exist between the datasets themselves?
+<br>
+From this, the only significant difference that we find between the models' estimates of these summary statistics is between the treelength estimates of Poisson and FLU (p=0.0104). This makes sense when going back to the violin plots above, where the stark difference in treelength estimates between Poisson and FLU can be visualized! It is important to note, however, that these linear models were run with the *mini* versions of the empirical datasets, so differences between the models' estimates of branch length summary statistics may actually be more profound than what is shown here. 
 
-```{r, vizualize differnces in datasets}
+### BRIEF Analysis of Datasets
+Thus far, we have really only focused on the differences that exist in branch length estimates between models, but what differences exist between the datasets themselves?
+
+```{r, vizualize differnces in datasets, echo=FALSE}
 
 mega_mini_bl2%>%
   select(dataset, treelength, mean_bl, max_bl)%>%
@@ -142,11 +145,10 @@ summarize(avg_treelength=mean(treelength), avg_bl=mean(mean_bl), avg_max_bl=mean
   ggplot(aes(x=dataset, y=avg_max_bl, fill=dataset))+
   geom_col()+
 theme_classic()+
-  labs(title="Differences in Branchlength Estimates Between Datasets", x="Dataset", y="Average Max Branchlength")+
+  labs(title="Differences in Max Branch length Estimates Between Datasets", x="Dataset", y="Average Max Branchlength")+
   scale_fill_brewer(palette = "Dark2")
 
 ```
 <br><br>
-This quick analysis shows us that the enzymes dataset displays MUCH MORE evolutionary change than the other two datasets (at least for the three id's selected for the mini-versions being utilized). 
+This quick analysis shows us that the enzymes dataset displays MUCH MORE evolutionary change than the other two datasets (at least for the selected id's). An interesting question this brings up is *why* does the enzyme data show so much more evolutionary change than the other two datasets? It could be that the sequences of the selected enzymes are not highly conserved, so they are able to change more throughout time without losing key functions. This is just one psooibility of many, though. 
 
-### Now, let's shift gears a little and investigate branchlength differences between models with 
