@@ -106,7 +106,7 @@ linear_model_function_curlies<-function(input_branchlength_df, dependent_variabl
 }
 
 ```
-#### Mean Branchn Length
+#### Mean Branch Length
 ``` {r lm for mean bl, echo=FALSE}
 linear_model_function_curlies(mega_mini_bl2, mega_mini_bl2$mean_bl)
 ```
