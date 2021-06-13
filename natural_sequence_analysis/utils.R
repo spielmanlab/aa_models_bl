@@ -4,7 +4,7 @@
 summarize_branch_lengths <- function(input_df) 
 {
   input_df %>% #dataframe of interest
-    group_by(model, ASRV, id)%>% #need to group before summarizing
+    group_by(model, ASRV, id, dataset)%>% #need to group before summarizing
     summarize(treelength = sum(branch_length),
               mean_bl    = mean(branch_length),
               median_bl  = median(branch_length),
@@ -86,7 +86,7 @@ lm_with_purr<-function(df)
 #returns: A tibble with the intercept and slope of the lm along with corresponding p values and r squared values. Every unique id has 2 rows with one dedicated to slope and the other to intercept
 Poisson_FLU_lm <-function (input_df)
 { 
-  input_df%>%lm
+  input_df%>%
     filter(ASRV == TRUE) %>% 
     select(-ASRV) %>% 
     group_by(id, dataset) %>% 
@@ -151,27 +151,24 @@ lm_two_models<- function (input_df, ASRV_T_F, model1, model2)
     rename(Slope=Poisson, Intercept=`(Intercept)`)%>%
     select(id, Intercept, Slope, p.value, r.squared, rsq.pvalue, -statistic)
   
-  
-  
   }
     
 
+#This function is meant to visualize the branch length measurements that can be found in the mega_mini_bl2 dataset (or any of the datasets created by using the summarize_branch_lengths function).
+#param bl_df: a dataframe that was created using the summarize_branch_lengths function anmd contains colums such as "treelength", "max_bl", etc. 
 
-#This function is used to create violin plots for any of the the branch length summary stats across models.
-#param bl_df: a dataframe that contains branchlength summary statistics (eg. mega_mini_bl2)
-#param measurement: the branchlength summary statistic of interest (treelength, mean_bl, etc)
-#param y_axis_title: will be the summary statistic of interest
-#param plot_title: will also depend on the summary statistic being plotted.
+
+
 Violin_bl_measurements<-function(bl_df, measurement, y_axis_title, plot_title)
 {
   bl_df%>%
-    select({{measurement}}, model, id, ASRV, dataset)%>% #measurement refers to a specific column so curlies 
+    select({{measurement}}, model, id, ASRV, dataset)%>%
     filter(ASRV=="TRUE")%>%
     group_by(model, id, dataset)%>%
-    ggplot(aes(x=model, y={{measurement}}, fill=model))+ #once again curlies here bc referring to a specific column
-    geom_violin()+ #could also use a boxplot here, just want to quickly see the distribution
-    geom_point()+# since there are not many points this is helpful 
-    stat_summary()+ #this will show that nice mean dot with lines for se
+    ggplot(aes(x=model, y={{measurement}}, fill=model))+
+    geom_violin()+
+    geom_point()+
+    stat_summary()+
     scale_fill_brewer(palette = "Dark2")+
     labs(x="Model", y=y_axis_title, title=plot_title)
 }

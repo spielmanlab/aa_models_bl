@@ -10,6 +10,10 @@ The primary goals for this project moving forward are to answer the following qu
 	   One lm per pair of protein models, per dataset, as `protein_model_bl ~ protein_model_bl`
 
 ## Notes
+-would be interesting to run the analysis without the enzyme data to see if lower evolutionary change does anything to the models' estimates of branch length summary stats (perhaps not so much under/over estimation).
+-still need to clean up the utils file
+-use the gt package to make nice tables 
+-
 
 
 
