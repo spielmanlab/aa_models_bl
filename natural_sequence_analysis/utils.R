@@ -24,7 +24,7 @@ summarize_branch_lengths <- function(input_df)
 #param input_branchlength_df: the branchlength dataframe of interest
 #param dependent_variable_column: which column to use as the dependent variable
 #returns: a tibble with tukey comparisons between each of the models (JTT, FLU, WAG, Poisson)
-linear_model_function_curlies<-function(input_branchlength_df, dependent_variable_column)
+bl_lm<-function(input_branchlength_df, dependent_variable_column)
 {
   input_branchlength_df %>%
     mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling #need to make ASRV non-boolean
@@ -81,7 +81,7 @@ lm_with_purr<-function(df)
   
 }
 
-#This function takes the bird, enzyme, mammal, or mega dataframe and creates an lm output for FLU~Poisson branchlength estimates
+#This function takes the bird, enzyme, mammal, or combined dataframe and creates an lm output for FLU~Poisson branchlength estimates
 #param input_df: the dataframe of interest (birds, mammals, enzymes, or mega_empirical_dataset)
 #returns: A tibble with the intercept and slope of the lm along with corresponding p values and r squared values. Every unique id has 2 rows with one dedicated to slope and the other to intercept
 Poisson_FLU_lm <-function (input_df)
@@ -110,53 +110,12 @@ Poisson_FLU_lm <-function (input_df)
 
 
 
-
-
-#This function is meant to be used as part of a later function (and I am unsure if it is even usable) but it is meant to be an lm of (model~model) where possible models are (JTT, FLU, WAG, Poisson, LG) 
-#param model 1: the first model of interest
-#param model 2: the second model of interest
-#param df: a dataframe that contains branchlength estimates from the models of interest
-#returns: lm of (model~model)
-lm_any_model<-function(model1, model2, df)
-{
-  lm({{model1}}~{{model2}}, data=df)
-}
-
-
-#this function is a work in progress but the goal is to perform an lm utilizing branchlength estimates for any two models (model1~model2) where models are (JTT, FLU, LG, WAG, Poisson).
-#param input_df: dataframe (birds, mammals, enzymes, or mega_empirical_dataset)
-#param ASRV_T_F: True or false for ASRV
-#param model1: first model (will serve as dependent var)
-#param model2: second model (will serve as independent var)
-#returns: A tibble with the intercept and slope of the lm along with corresponding p values and r squared values. Every unique id has 2 rows with one dedicated to slope and the other to intercept
-lm_two_models<- function (input_df, ASRV_T_F, model1, model2)
-{
-    input_df%>%
-    filter(ASRV == ASRV_T_F) %>% 
-    select(-ASRV) %>% 
-    group_by(id, dataset) %>% 
-    pivot_wider(names_from = model, values_from = branch_length)%>%
-    select({{model1}}, {{model2}})%>%
-    group_by(dataset, id)%>%
-    nest()%>%
-    mutate(lm_fit=map(data,lm_any_model))%>%
-    select(-data)%>%
-    mutate(tidied=map(lm_fit,broom::tidy), glanced=map(lm_fit, broom::glance))%>%
-    select(-lm_fit)%>%
-    unnest(glanced)%>%
-    select(id, tidied, r.squared, rsq.pvalue = p.value)%>%
-    unnest(tidied)%>%
-    select(-std.error)%>%
-    pivot_wider(names_from = term, values_from = estimate)%>%
-    rename(Slope=Poisson, Intercept=`(Intercept)`)%>%
-    select(id, Intercept, Slope, p.value, r.squared, rsq.pvalue, -statistic)
-  
-  }
-    
-
-#This function is meant to visualize the branch length measurements that can be found in the mega_mini_bl2 dataset (or any of the datasets created by using the summarize_branch_lengths function).
-#param bl_df: a dataframe that was created using the summarize_branch_lengths function anmd contains colums such as "treelength", "max_bl", etc. 
-
+#This function is meant to visualize the branch length measurements that can be found in the summarized_bl dataset (or any of the datasets created by using the summarize_branch_lengths function).
+#param bl_df: a dataframe that was created using the summarize_branch_lengths function and contains cols such as "treelength", "max_bl", etc. 
+#param measurement: the summary stat of interest ex. treelength, max_bl, etc
+#param y_axis title: will be the same as the summary stat being used
+#param plot_title: Will be in the form of "Violin plot of summary stat over model"
+#returns: a violin plot of summary stat of interest over the five different models
 
 
 Violin_bl_measurements<-function(bl_df, measurement, y_axis_title, plot_title)
@@ -180,6 +139,66 @@ Violin_bl_measurements<-function(bl_df, measurement, y_axis_title, plot_title)
 
 
 
+
+#####################################################################################################
+#this if_else sattement was a little confusing (I understand what iut does but I donlt quite know how to execute it to get what I want out of it) so I want to leave it here in case we want to use it in the future.
+#model_type <- #1,2,3
+  
+ # if(model_type == 1)
+ # {
+  #  lm({{dependent_variable_column}} ~ model+ dataset+ ASRV_modified, data= df_for_modeling) -> fit
+ # } else if (model_type == 2)
+ # {
+  #  lm({{dependent_variable_column}} ~ model+ ASRV_modified, data= df_for_modeling) -> fit
+ # } else if (model_type == 3) 
+ # {
+  #  lm({{dependent_variable_column}} ~ model, data= df_for_modeling) -> fit
+ # } else {
+  #  stop("model_type has to be 1,2,3")
+ # }
+
+
+
+#This function is meant to be used as part of a later function (and I am unsure if it is even usable) but it is meant to be an lm of (model~model) where possible models are (JTT, FLU, WAG, Poisson, LG) 
+#param model 1: the first model of interest
+#param model 2: the second model of interest
+#param df: a dataframe that contains branchlength estimates from the models of interest
+#returns: lm of (model~model)
+lm_any_model<-function(model1, model2, df)
+{
+  lm({{model1}}~{{model2}}, data=df)
+}
+
+
+#this function is a work in progress but the goal is to perform an lm utilizing branchlength estimates for any two models (model1~model2) where models are (JTT, FLU, LG, WAG, Poisson).
+#param input_df: dataframe (birds, mammals, enzymes, or mega_empirical_dataset)
+#param ASRV_T_F: True or false for ASRV
+#param model1: first model (will serve as dependent var)
+#param model2: second model (will serve as independent var)
+#returns: A tibble with the intercept and slope of the lm along with corresponding p values and r squared values. Every unique id has 2 rows with one dedicated to slope and the other to intercept
+lm_two_models<- function (input_df, ASRV_T_F, model1, model2)
+{
+  input_df%>%
+    filter(ASRV == ASRV_T_F) %>% 
+    select(-ASRV) %>% 
+    group_by(id, dataset) %>% 
+    pivot_wider(names_from = model, values_from = branch_length)%>%
+    select({{model1}}, {{model2}})%>%
+    group_by(dataset, id)%>%
+    nest()%>%
+    mutate(lm_fit=map(data,lm_any_model))%>%
+    select(-data)%>%
+    mutate(tidied=map(lm_fit,broom::tidy), glanced=map(lm_fit, broom::glance))%>%
+    select(-lm_fit)%>%
+    unnest(glanced)%>%
+    select(id, tidied, r.squared, rsq.pvalue = p.value)%>%
+    unnest(tidied)%>%
+    select(-std.error)%>%
+    pivot_wider(names_from = term, values_from = estimate)%>%
+    rename(Slope=Poisson, Intercept=`(Intercept)`)%>%
+    select(id, Intercept, Slope, p.value, r.squared, rsq.pvalue, -statistic)
+  
+}
 
 
 

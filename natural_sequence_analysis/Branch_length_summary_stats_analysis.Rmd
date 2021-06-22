@@ -24,10 +24,6 @@ The primary goal of this analysis is to determine whether branch length summary 
 
 ```{r read in the data and make smaller datasets, message=FALSE}
 
-# using parameters:
-#https://rmarkdown.rstudio.com/lesson-6.html
-# params$mini is TRUE by default. 
-
 
 birds_file <- file.path(path_to_data, "bird_empirical_branch_lengths.csv")
 mammals_file <- file.path(path_to_data, "mammal_empirical_branch_lengths.csv")
@@ -45,10 +41,10 @@ minify <- function(df)
     group_by(id) %>% 
     nest() %>%
     ungroup() %>%
-    slice(1:params$mini_n) %>%
+    slice(1:params$mini_n) %>% #this takes the first *however many* rows from the dataset. The *however many* is specified by the params$mini_n
     unnest(cols = c(data))
 }
-if (params$mini == TRUE) 
+if (params$mini == TRUE) #if we want to use the mini versions of the datasets, then use the mini function on each of them!!
 {
   minify(birds) -> birds 
   minify(enzymes) -> enzymes
@@ -57,9 +53,9 @@ if (params$mini == TRUE)
 
 bind_rows(mammals, enzymes, birds) -> full_data #this is just one big data frame consisting of the three datasets
 
-summarize_branch_lengths(full_data) -> summarized_bl #this data frame will have branch length summary statistics
+summarize_branch_lengths(full_data) -> summarized_bl #this data frame will have branch length summary statistics for enzymes, birds, and mammals
 
-summarized_bl
+print(summarized_bl) 
 ```
 This dataset contains branch length summary statistics (columns) for three selcted id's from the bird, mammal, and enzyme datasets. Moving forward, we will use this dataset to determine if these summary statistics differ across protein models (JTT, WAG, FLU, Poisson, and LG). 
 
@@ -95,34 +91,72 @@ From this, we first see that FLU *appears* to overestimate the branch length rel
 
 ### Now, Let's continue to address our goal, but this time by utilizing linear models to determine if branch length *summary statistics* do indeed differ across protein models. Specifically, we will look at mean branch length, treelength, and max branchlength.
 
-```{r linear model statistic~ protein_model + ASRV+ dataset}
-linear_model_function_curlies<-function(input_branchlength_df, dependent_variable_column)
+First, let's see the function that will be used to conduct this analysis:
+``` {r, bl_lm function}
+
+bl_lm_type1<-function(input_branchlength_df, dependent_variable_column)
 {
   input_branchlength_df %>%
     mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling #need to make ASRV non-boolean
   
-  lm({{dependent_variable_column}} ~ model+ dataset+ ASRV_modified, data= df_for_modeling) %>% #since we are referring to a column,we need to use curlies
+  lm({{dependent_variable_column}} ~ model+ ASRV_modified+ dataset, data= df_for_modeling) %>% #since we are referring to a column,we need to use curlies
     aov() %>%
     TukeyHSD()->fitted_model
   
   fitted_model$model %>% 
-    as_tibble(rownames = "Compare") #this will make the output a little nicer
+    as_tibble(rownames = "comparison") #this will make the output a little nicer
+}
+
+
+bl_lm_type2<-function(input_branchlength_df, dependent_variable_column)
+{
+  input_branchlength_df %>%
+    mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling #need to make ASRV non-boolean
+  
+  lm({{dependent_variable_column}} ~ model+ ASRV_modified, data= df_for_modeling) %>% #since we are referring to a column,we need to use curlies
+    aov() %>%
+    TukeyHSD()->fitted_model
+  
+  fitted_model$model %>% 
+    as_tibble(rownames = "comparison") 
+  
+}
+
+
+bl_lm_type3<-function(input_branchlength_df, dependent_variable_column)
+{
+  input_branchlength_df %>%
+    mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling #need to make ASRV non-boolean
+  
+  lm({{dependent_variable_column}} ~ model,data= df_for_modeling) %>% #since we are referring to a column,we need to use curlies
+    aov() %>%
+    TukeyHSD()->fitted_model
+  
+  fitted_model$model %>% 
+    as_tibble(rownames = "comparison") 
+
 }
 
 ```
+
+Now, we can plug in different branch length-related summary stats into the `dependent_variable_column` variable in the function. Similarly, we can plug in different datasets by adding a variable for `dataset`. For our analysis, we will conduct (4) linear models for each summary statistic of interest: one with all of the datasets lumped together as they appear in `summarized_bl`, and three individual models for the three respective datasets. Note that we can also change the *predictors* that are used within the model itself. For example, one possibility is `summary stat`~`model`+ `dataset`+`ASRV_modified`. This format is basically asking the question "how well do three factors: the model used (1), the dataset the branchlengths came from (2) and the ASRV (3) explain the variation that is seen in the summary stat of interest? There are two other types of linear models that we can run from modifying this formula. They are as follows: `summary stat`~`model`+ `dataset` and `summary stat`~`model`. We can consoder these three types of linear models as three "types" of models, each with different predictor variables. Overall, this leaves us with 4 type 1 models, 4 type 2 models, and 4 type 3 models for each summary stat of interest. Since we are concerned with three summary stats total, this leaves us with 36 linear models to analyze! 
+ <br><br>
+ 
+ First, we will look at mean branch length as our branch length summary statistic of interest.
+
 #### Mean Branch Length
 ``` {r lm for mean bl}
-linear_model_function_curlies(summarized_bl, summarized_bl$mean_bl)
+bl_lm_type1(summarized_bl, summarized_bl$mean_bl)
 ```
 
 #### Treelength
 ```{r lm for treelength}
-linear_model_function_curlies(summarized_bl, summarized_bl$treelength)
+bl_lm_type1(summarized_bl, summarized_bl$treelength)
 ```
 
 #### Max Branch Length
 ```{r lm for max bl}
-linear_model_function_curlies(summarized_bl, summarized_bl$max_bl)
+bl_lm_type1(summarized_bl, summarized_bl$max_bl)
 ```
 
 <br>
@@ -154,5 +188,5 @@ theme_classic()+
 
 ```
 <br><br>
-This quick analysis shows us that the enzymes dataset displays MUCH MORE evolutionary change than the other two datasets (at least for the selected id's). An interesting question this brings up is *why* does the enzyme data show so much more evolutionary change than the other two datasets? It could be that the sequences of the selected enzymes are not highly conserved, so they are able to change more throughout time without losing key functions. This is just one psooibility of many, though. 
+This quick analysis shows us that the enzymes dataset displays MUCH MORE evolutionary change than the other two datasets (at least for the selected id's). An interesting question this brings up is *why* does the enzyme data show so much more evolutionary change than the other two datasets? It could be that the sequences of the selected enzymes are not highly conserved, so they are able to change more throughout time without losing key functions. This is just one possibility of many, though. 
 
