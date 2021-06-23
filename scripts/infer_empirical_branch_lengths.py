@@ -8,13 +8,13 @@ import sys
 path_to_data = sys.argv[1]
 if not path_to_data.endswith("/"):
     path_to_data += "/"
-dataset_type = sys.argv[2]
-threads      = sys.argv[3]
+outpath = sys.argv[2]
+dataset_type = sys.argv[3]
+threads      = sys.argv[4]
 
 if dataset_type == "mammal":
     treefile = path_to_data + "mammal.tre"
 
-outpath = path_to_data + "../" + dataset_type + "_optimized_bl/"
    
 
 q_options = ["WAG", "JTT", "LG", "FLU", "Poisson"]
@@ -31,7 +31,7 @@ for fasta in fastas:
     fasfile = path_to_data + fasta
     if dataset_type != "mammal":
         treefile = fasfile.replace(".fasta", ".tre")
-    if dataset_type == "bird":
+    if dataset_type == "bird" or dataset_type == "pandit":
         # Infer a quick fasttree. Does not need to be the best tree, just the SAME tree for all model bl optimizations
         cmd = "FastTree -quiet -fastest -noml " + fasfile + " > " + treefile
         cmdcode = os.system(cmd)
@@ -65,7 +65,6 @@ for fasta in fastas:
             os.system("mv " + fasfile + ".log " + final_log)
             os.system("mv " + fasfile + ".treefile " + final_tree)
             os.system("rm " + fasfile + ".*")            
-            #assert 1==3
             
             
             
