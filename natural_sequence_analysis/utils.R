@@ -141,7 +141,7 @@ Violin_bl_measurements<-function(bl_df, measurement, y_axis_title, plot_title)
 
 
 #####################################################################################################
-#this if_else sattement was a little confusing (I understand what iut does but I donlt quite know how to execute it to get what I want out of it) so I want to leave it here in case we want to use it in the future.
+#this if_else statement was a little confusing (I understand what it does but I don't quite know how to execute it to get what I want out of it) so I want to leave it here in case we want to use it in the future.
 #model_type <- #1,2,3
   
  # if(model_type == 1)

@@ -51,7 +51,13 @@ if (params$mini == TRUE) #if we want to use the mini versions of the datasets, t
   minify(mammals) -> mammals
 }
 
+
+summarize_branch_lengths(birds) -> birds_bl
+summarize_branch_lengths(mammals) -> mammals_bl
+summarize_branch_lengths(enzymes) -> enzymes_bl
+
 bind_rows(mammals, enzymes, birds) -> full_data #this is just one big data frame consisting of the three datasets
+
 
 summarize_branch_lengths(full_data) -> summarized_bl #this data frame will have branch length summary statistics for enzymes, birds, and mammals
 
@@ -146,7 +152,21 @@ Now, we can plug in different branch length-related summary stats into the `depe
 
 #### Mean Branch Length
 ``` {r lm for mean bl}
+
+#CAN NOT DO TYPE ONE ON THE MAMMALS, ENZYMES, OR BIRDS ALONE SINCE THERE IS NO VARIATION IN *DATASET*
 bl_lm_type1(summarized_bl, summarized_bl$mean_bl)
+bl_lm_type2(summarized_bl, summarized_bl$mean_bl)
+bl_lm_type3(summarized_bl, summarized_bl$mean_bl)
+
+bl_lm_type2(birds_bl, birds_bl$mean_bl)
+bl_lm_type3(birds_bl, birds_bl$mean_bl)
+
+bl_lm_type2(mammals_bl, mammals_bl$mean_bl)
+bl_lm_type3(mammals_bl, mammals_bl$mean_bl)
+
+bl_lm_type2(enzymes_bl, enzymes_bl$mean_bl)
+bl_lm_type3(enzymes_bl, enzymes_bl$mean_bl)
+
 ```
 
 #### Treelength
