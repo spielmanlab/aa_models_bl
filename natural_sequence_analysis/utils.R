@@ -1,6 +1,6 @@
 #Takes one of the original empirical datasets and creates a tibble with several branchlength-related measurements.
 #param input_df: the empirical dataset of interest
-#returns: a tibble with several branchlength-related measurements
+#returns: a tibble with several branchlength-related measurements including mean_bl, max_bl, and treelength.
 summarize_branch_lengths <- function(input_df) 
 {
   input_df %>% #dataframe of interest
@@ -42,7 +42,7 @@ bl_lm<-function(input_branchlength_df, dependent_variable_column)
 
 
 #This function is useful for plotting any one of the columns in the branchlength dataframes and comparing each model's output to Poisson's output
-#param input_df: Any one of the branchlength dataframes
+#param input_df: Any one of the branchlength dataframes (birds_bl, mammals_bl, enzymes_bl, summarized_bl)
 #param column_to_plot: which column from the branchlength dataframe to plot
 #param plot_title: plot title
 #param x_label: x axis label
@@ -82,7 +82,7 @@ lm_with_purr<-function(df)
 }
 
 #This function takes the bird, enzyme, mammal, or combined dataframe and creates an lm output for FLU~Poisson branchlength estimates
-#param input_df: the dataframe of interest (birds, mammals, enzymes, or mega_empirical_dataset)
+#param input_df: the dataframe of interest (birds, mammals, enzymes, full_data)
 #returns: A tibble with the intercept and slope of the lm along with corresponding p values and r squared values. Every unique id has 2 rows with one dedicated to slope and the other to intercept
 Poisson_FLU_lm <-function (input_df)
 { 
@@ -121,19 +121,47 @@ Poisson_FLU_lm <-function (input_df)
 Violin_bl_measurements<-function(bl_df, measurement, y_axis_title, plot_title)
 {
   bl_df%>%
-    select({{measurement}}, model, id, ASRV, dataset)%>%
-    filter(ASRV=="TRUE")%>%
-    group_by(model, id, dataset)%>%
+    mutate(ASRV_modified= if_else(ASRV==TRUE, "ASRV +", "ASRV -"))%>%
+    select({{measurement}}, model, id, ASRV_modified, dataset)%>%
+    group_by(model, id, dataset, ASRV_modified)%>%
     ggplot(aes(x=model, y={{measurement}}, fill=model))+
     geom_violin()+
     geom_point()+
     stat_summary()+
+    facet_wrap(vars(ASRV_modified))+
     scale_fill_brewer(palette = "Dark2")+
     labs(x="Model", y=y_axis_title, title=plot_title)
 }
 
 
 
+#linear model with three different types, each with different predictors. Once a lm is performed, do an aov and tukey test for significance and report the results as a table where the models will be compared. 
+bl_lm<- function (input_branchlength_df, model_type, dependent_variable_column)
+{
+  input_branchlength_df %>%
+    mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling
+  
+  if(model_type == "type_1")
+  {
+    lm({{dependent_variable_column}} ~ model+ dataset+ ASRV_modified, data= df_for_modeling)%>% aov() %>%
+      TukeyHSD()->fitted_model
+  } 
+  
+  else if (model_type == "type_2")
+  {
+    lm({{dependent_variable_column}} ~ model+ ASRV_modified, data= df_for_modeling) %>% aov() %>%
+      TukeyHSD()->fitted_model
+  } 
+  else if (model_type == "type_3") 
+  {
+    lm({{dependent_variable_column}} ~ model, data= df_for_modeling) %>% aov() %>%
+      TukeyHSD()->fitted_model
+  }
+  
+  {
+    fitted_model$model %>% 
+      as_tibble(rownames = "comparison") #this makes the output nicer to read/understand
+  }}
 
 
 
@@ -141,23 +169,6 @@ Violin_bl_measurements<-function(bl_df, measurement, y_axis_title, plot_title)
 
 
 #####################################################################################################
-#this if_else statement was a little confusing (I understand what it does but I don't quite know how to execute it to get what I want out of it) so I want to leave it here in case we want to use it in the future.
-#model_type <- #1,2,3
-  
- # if(model_type == 1)
- # {
-  #  lm({{dependent_variable_column}} ~ model+ dataset+ ASRV_modified, data= df_for_modeling) -> fit
- # } else if (model_type == 2)
- # {
-  #  lm({{dependent_variable_column}} ~ model+ ASRV_modified, data= df_for_modeling) -> fit
- # } else if (model_type == 3) 
- # {
-  #  lm({{dependent_variable_column}} ~ model, data= df_for_modeling) -> fit
- # } else {
-  #  stop("model_type has to be 1,2,3")
- # }
-
-
 
 #This function is meant to be used as part of a later function (and I am unsure if it is even usable) but it is meant to be an lm of (model~model) where possible models are (JTT, FLU, WAG, Poisson, LG) 
 #param model 1: the first model of interest

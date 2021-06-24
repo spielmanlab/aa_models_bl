@@ -5,7 +5,7 @@ output:
     theme: "cayman"
 params: 
   mini: TRUE
-  mini_n: 5
+  mini_n: 30
 editor_options: 
   chunk_output_type: console
 ---
@@ -13,6 +13,7 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo= TRUE, include = TRUE)
 library(tidyverse)
+library(cowplot)
 source("utils.R")
 path_to_data <- "./" 
 ```
@@ -44,6 +45,7 @@ minify <- function(df)
     slice(1:params$mini_n) %>% #this takes the first *however many* rows from the dataset. The *however many* is specified by the params$mini_n
     unnest(cols = c(data))
 }
+
 if (params$mini == TRUE) #if we want to use the mini versions of the datasets, then use the mini function on each of them!!
 {
   minify(birds) -> birds 
@@ -72,14 +74,15 @@ Okay, now that we have our mini-dataset, let's begin to see how the branch lengt
 
 Violin_bl_measurements<-function(bl_df, measurement, y_axis_title, plot_title)
 {
-bl_df%>%
-  select({{measurement}}, model, id, ASRV, dataset)%>%
-  filter(ASRV==TRUE)%>%
-  group_by(model, id, dataset)%>%
+  bl_df%>%
+  mutate(ASRV_modified= if_else(ASRV==TRUE, "ASRV +", "ASRV -"))%>%
+  select({{measurement}}, model, id, ASRV_modified, dataset)%>%
+  group_by(model, id, dataset, ASRV_modified)%>%
   ggplot(aes(x=model, y={{measurement}}, fill=model))+
   geom_violin()+
   geom_point()+
   stat_summary()+
+  facet_wrap(vars(ASRV_modified))+
   scale_fill_brewer(palette = "Dark2")+
   labs(x="Model", y=y_axis_title, title=plot_title)
 }
@@ -87,100 +90,131 @@ bl_df%>%
 ```
 
 ```{r vizualize branch lengths violin}
-Violin_bl_measurements(summarized_bl, treelength, "Treelength", "Estimated Treelengths for Selected Id's")
-Violin_bl_measurements(summarized_bl, mean_bl, "Mean_bl", "Estimated Mean Branchlengths for Selected Id's")
-Violin_bl_measurements(summarized_bl, max_bl, "Max_bl", "Estimated Maximum Branchlengths for Selected Id's")
+Violin_bl_measurements(summarized_bl, treelength, "Treelength", "Estimated Treelengths for Selected Id's")->violin_treelength
+Violin_bl_measurements(summarized_bl, mean_bl, "Mean_bl", "Estimated Mean Branchlengths for Selected Id's")->violin_mean_bl
+Violin_bl_measurements(summarized_bl, max_bl, "Max_bl", "Estimated Maximum Branchlengths for Selected Id's")->violin_max_bl
+```
+
+```{r actually show violins}
+
+print(violin_treelength)
+print(violin_mean_bl)
+print(violin_max_bl)
+
+
 ```
 <br><br>
-From this, we first see that FLU *appears* to overestimate the branch length related measurements while Poisson underestimates. The next noticable aspect of these figures is that these distributions appear to be bi-modal. In each of the violins, there are points grouped both at the top and bottom, but why? It can not be due to ASRV being different, since ASRV is `TRUE` for all points in these figures. This leads us to beleive there is a difference in the *datasets themselves* that is causing us to see this bimodal distribution. A quick look at the dataset in the beginning of this document supports our suspicion, as the `enzymes` summary statistics are much higher than those of `birds` or `mammals`. Perhaps it would be interesting to run the analysis without the enzyme data, to see how the models perform under lower-varience conditions. Maybe the overestimation by FLU and the underestimation by Poisson are due to the high variation alone, in which case we could approximate *how much* varience these models can "handle" before they are no longer reliable. 
+From this, we first see that FLU *appears* to overestimate the branch length related measurements while Poisson underestimates. The next noticable aspect of these figures is that these distributions appear to be bi-modal. In each of the violins, there are points grouped both at the top and bottom, but why? It can not be due to ASRV being different, since ASRV is `TRUE` for all points in these figures. This leads us to beleive there is a difference in the *datasets themselves* that is causing us to see this bimodal distribution. A quick look at the dataset in the beginning of this document supports our suspicion, as the `enzymes` summary statistics are elevated compared to those of `birds` or `mammals`. Perhaps it would be interesting to run the analysis without the enzyme data, to see how the models perform under lower-varience conditions. Maybe the overestimation by FLU and the underestimation by Poisson are due to the high variation alone, in which case we could approximate *how much* variance these models can "handle" before they are no longer reliable. 
 <br><br>
 
-### Now, Let's continue to address our goal, but this time by utilizing linear models to determine if branch length *summary statistics* do indeed differ across protein models. Specifically, we will look at mean branch length, treelength, and max branchlength.
+### Now, Let's continue to address our goal, but this time by utilizing linear models to determine if branch length *summary statistics* do indeed differ across protein models. Specifically, we will look at mean branch length, treelength, and max branch length.
 
 First, let's see the function that will be used to conduct this analysis:
 ``` {r, bl_lm function}
 
-bl_lm_type1<-function(input_branchlength_df, dependent_variable_column)
+#linear model with three different types, each with different predictors. Once a lm is performed, do an aov and tukey test for significance and report the results as a table where the models will be compared. Three arguments for this function are the branchlength dataframe to be used, the type of model to run, and which summary statistic to run the model on. 
+bl_lm<- function (input_branchlength_df, model_type, dependent_variable_column)
 {
   input_branchlength_df %>%
-    mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling #need to make ASRV non-boolean
-  
-  lm({{dependent_variable_column}} ~ model+ ASRV_modified+ dataset, data= df_for_modeling) %>% #since we are referring to a column,we need to use curlies
-    aov() %>%
+    mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling
+
+if(model_type == "type_1")
+  {
+  lm({{dependent_variable_column}} ~ model+ dataset+ ASRV_modified, data= df_for_modeling)%>% aov() %>%
     TukeyHSD()->fitted_model
+} 
   
-  fitted_model$model %>% 
-    as_tibble(rownames = "comparison") #this will make the output a little nicer
-}
-
-
-bl_lm_type2<-function(input_branchlength_df, dependent_variable_column)
+else if (model_type == "type_2")
 {
-  input_branchlength_df %>%
-    mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling #need to make ASRV non-boolean
-  
-  lm({{dependent_variable_column}} ~ model+ ASRV_modified, data= df_for_modeling) %>% #since we are referring to a column,we need to use curlies
-    aov() %>%
+  lm({{dependent_variable_column}} ~ model+ ASRV_modified, data= df_for_modeling) %>% aov() %>%
     TukeyHSD()->fitted_model
-  
-  fitted_model$model %>% 
-    as_tibble(rownames = "comparison") 
-  
-}
-
-
-bl_lm_type3<-function(input_branchlength_df, dependent_variable_column)
+} 
+else if (model_type == "type_3") 
 {
-  input_branchlength_df %>%
-    mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling #need to make ASRV non-boolean
-  
-  lm({{dependent_variable_column}} ~ model,data= df_for_modeling) %>% #since we are referring to a column,we need to use curlies
-    aov() %>%
+  lm({{dependent_variable_column}} ~ model, data= df_for_modeling) %>% aov() %>%
     TukeyHSD()->fitted_model
-  
-  fitted_model$model %>% 
-    as_tibble(rownames = "comparison") 
-
 }
+
+{
+fitted_model$model %>% 
+    as_tibble(rownames = "comparison") #this makes the output nicer to read/understand
+}}
 
 ```
 
-Now, we can plug in different branch length-related summary stats into the `dependent_variable_column` variable in the function. Similarly, we can plug in different datasets by adding a variable for `dataset`. For our analysis, we will conduct (4) linear models for each summary statistic of interest: one with all of the datasets lumped together as they appear in `summarized_bl`, and three individual models for the three respective datasets. Note that we can also change the *predictors* that are used within the model itself. For example, one possibility is `summary stat`~`model`+ `dataset`+`ASRV_modified`. This format is basically asking the question "how well do three factors: the model used (1), the dataset the branchlengths came from (2) and the ASRV (3) explain the variation that is seen in the summary stat of interest? There are two other types of linear models that we can run from modifying this formula. They are as follows: `summary stat`~`model`+ `dataset` and `summary stat`~`model`. We can consoder these three types of linear models as three "types" of models, each with different predictor variables. Overall, this leaves us with 4 type 1 models, 4 type 2 models, and 4 type 3 models for each summary stat of interest. Since we are concerned with three summary stats total, this leaves us with 36 linear models to analyze! 
- <br><br>
+Now, there is LOTS of variation we are able to utilize with this function. First, we can plug in different branch length-related summary stats (`mean_bl`, `max_bl`, or `treelength`) into the `dependent_variable_column` variable in the function. Similarly, we can plug in different branch length datasets by changing the variable for `input_branchlength_df`. Note that we can also change the *predictors* that are used within the model itself. For example, one possibility is `summary stat`~`model`+ `dataset`+`ASRV_modified`. This format is basically asking the question "how well do three factors: the model used (1), the dataset the branch lengths came from (2) and the ASRV (3) explain the variation that is seen in the summary stat of interest? There are two other types of linear models that we can run from modifying this formula. They are as follows: `summary stat`~`model`+ `dataset` and `summary stat`~`model`. We can consider these three formats of linear models as three "types" of models, each with different predictor variables. For our analysis, we will conduct (9) linear models for *each* summary statistic of interest (`mean_bl`, `treelength`, and `max_bl`). There will be only one "type one" linear model for each summary statistic since the this type of model relies on there being variation in the `dataset` variable, which is only found in the `summarized bl` dataset. There will then be four (4) type 2 and four (4) type three linear models carried out for *each* statistic (one each from `birds_bl`, `mammals_bl`, `enzymes_bl`, and `summarized_bl`).Overall, this leaves us with 1 type 1 model, 4 type 2 models, and 4 type 3 models for each summary stat of interest. Since we are concerned with three summary stats total, this leaves us with 27 linear models to analyze! 
+<br><br>
  
  First, we will look at mean branch length as our branch length summary statistic of interest.
 
 #### Mean Branch Length
 ``` {r lm for mean bl}
+#CAN NOT DO TYPE ONE ON THE MAMMALS, ENZYMES, OR BIRDS ALONE SINCE THERE IS NO VARIATION IN THE *DATASET* VARIABLE!!!
 
-#CAN NOT DO TYPE ONE ON THE MAMMALS, ENZYMES, OR BIRDS ALONE SINCE THERE IS NO VARIATION IN *DATASET*
-bl_lm_type1(summarized_bl, summarized_bl$mean_bl)
-bl_lm_type2(summarized_bl, summarized_bl$mean_bl)
-bl_lm_type3(summarized_bl, summarized_bl$mean_bl)
+#As explained above, there will be one type 1, four type 2, and four type 3 linear models run for the mean_bl summary statistic.
+bl_lm (summarized_bl, "type_1", summarized_bl$mean_bl)
+bl_lm (summarized_bl, "type_2", summarized_bl$mean_bl)
+bl_lm (summarized_bl, "type_3", summarized_bl$mean_bl)
 
-bl_lm_type2(birds_bl, birds_bl$mean_bl)
-bl_lm_type3(birds_bl, birds_bl$mean_bl)
+bl_lm (birds_bl, "type_2", birds_bl$mean_bl)
+bl_lm (birds_bl, "type_3", birds_bl$mean_bl)
 
-bl_lm_type2(mammals_bl, mammals_bl$mean_bl)
-bl_lm_type3(mammals_bl, mammals_bl$mean_bl)
+bl_lm (mammals_bl, "type_2", mammals_bl$mean_bl)
+bl_lm (mammals_bl, "type_3", mammals_bl$mean_bl)
 
-bl_lm_type2(enzymes_bl, enzymes_bl$mean_bl)
-bl_lm_type3(enzymes_bl, enzymes_bl$mean_bl)
+bl_lm (enzymes_bl, "type_2", enzymes_bl$mean_bl)
+bl_lm (enzymes_bl, "type_3", enzymes_bl$mean_bl)
+
 
 ```
 
 #### Treelength
+Next, we will look at treelength as our brnach length summary statistic of interest.
 ```{r lm for treelength}
-bl_lm_type1(summarized_bl, summarized_bl$treelength)
+#CAN NOT DO TYPE ONE ON THE MAMMALS, ENZYMES, OR BIRDS ALONE SINCE THERE IS NO VARIATION IN THE *DATASET* VARIABLE!!!
+
+#As explained above, there will be one type 1, four type 2, and four type 3 linear models run for the treelength summary statistic.
+bl_lm (summarized_bl, "type_1", summarized_bl$treelength)
+bl_lm (summarized_bl, "type_2", summarized_bl$treelength)
+bl_lm (summarized_bl, "type_3", summarized_bl$treelength)
+
+bl_lm (birds_bl, "type_2", birds_bl$treelength)
+bl_lm (birds_bl, "type_3", birds_bl$treelength)
+
+bl_lm (mammals_bl, "type_2", mammals_bl$treelength)
+bl_lm (mammals_bl, "type_3", mammals_bl$treelength)
+
+bl_lm (enzymes_bl, "type_2", enzymes_bl$treelength)
+bl_lm (enzymes_bl, "type_3", enzymes_bl$treelength)
+
 ```
+
 
 #### Max Branch Length
-```{r lm for max bl}
-bl_lm_type1(summarized_bl, summarized_bl$max_bl)
+Finally, we will look at max branch length as our summary statistic of interest. 
+```{r lm for max_bl}
+#CAN NOT DO TYPE ONE MODEL ON THE MAMMALS, ENZYMES, OR BIRDS ALONE SINCE THERE IS NO VARIATION IN THE *DATASET* VARIABLE!!!
+
+#As explained above, there will be one type 1, four type 2, and four type 3 linear models run for the treelength summary statistic.
+bl_lm (summarized_bl, "type_1", summarized_bl$max_bl)
+bl_lm (summarized_bl, "type_2", summarized_bl$max_bl)
+bl_lm (summarized_bl, "type_3", summarized_bl$max_bl)
+
+bl_lm (birds_bl, "type_2", birds_bl$max_bl)
+bl_lm (birds_bl, "type_3", birds_bl$max_bl)
+
+bl_lm (mammals_bl, "type_2", mammals_bl$max_bl)
+bl_lm (mammals_bl, "type_3", mammals_bl$max_bl)
+
+bl_lm (enzymes_bl, "type_2", enzymes_bl$max_bl)
+bl_lm (enzymes_bl, "type_3", enzymes_bl$max_bl)
+
+
 ```
 
-<br>
-From this, the only significant difference that we find between the models' estimates of these summary statistics is between the treelength estimates of Poisson and FLU (p=0.0104). This makes sense when going back to the violin plots above, where the stark difference in treelength estimates between Poisson and FLU can be visualized! It is important to note, however, that these linear models were run with the *mini* versions of the empirical datasets, so differences between the models' estimates of branch length summary statistics may actually be more profound than what is shown here. 
+<br><br>
+#### What Did We Learn from all of that modeling?
+From this, we see that the many significant findings occur when comparing Poisson to FLU, which is not surprising when considering our earlier results seen in the violin plots. When focusing on model type, most of the significant findings occur when performing type 1 models, which have the most predictor variables of any model type (`model`, `dataset`, and `ASRV_modified` are all predictors). When considering datasets, most of the significant findings occur within the enzymes dataset, which we know is the highest-divergence dataset of the three. This suggests that higher-divergence sequences lead to more exaggerated differences in the models' estimates of branch length summary statistics. Finally, when considering the summary statistics themselves, it appears that the models' estimates of max branch length (`max_bl`) actually displayed the most discrepancy. When taking this all in as a whole, the conditions that produced the least amount of agreement between models' estimates were max_bl estimates from the enzymes dataset. This information helps us understand how the different models (JTT, FLU, WAG, Poisson, and LG) perform under varying circumstances (with different predictors, datasets, and summary statistics).
 
 ### BRIEF Analysis of Datasets
 Thus far, we have really only focused on the differences that exist in branch length estimates between models, but what differences exist between the datasets themselves?
