@@ -213,27 +213,6 @@ lm_two_models<- function (input_df, ASRV_T_F, model1, model2)
 
 
 
-###
-
-
-#also want to plot the comparisons with geom line_range...
-#need to pivot in order to get coefficients, lwr, upr all in the same tibble!!!!!
-#{
-#  Chart_output_wide%>%
-#    pivot_longer(diff:upr, names_to ="Type_of_coeff", values_to = "Coefficients")->Chart_output_long
-  
-#  left_join(Chart_output_long, Chart_output_wide)->Chart_output_longandwide #NOW we can start graphing since we have all the columns we need!! (lwr, upr, and coefficients!!)
-  
-  
- # ggplot((Chart_output_longandwide), aes(x=Coefficients,y=comparison))+
-#    geom_point()+
-#    geom_linerange(xmin= Chart_output_longandwide$lwr, xmax=Chart_output_longandwide$upr)+
-#    geom_vline(xintercept=0)->line_range_plot
-#} 
-
-#{ (line_range_plot)
-#}
-#}
 
 
 
