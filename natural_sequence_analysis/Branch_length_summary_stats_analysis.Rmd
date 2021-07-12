@@ -23,7 +23,7 @@ path_to_data <- "./"
 ## Goal
 The primary goal of this analysis is to determine whether branch length summary statistics differ across protein models.
 
-## First let's take a look at some sample id's from the bird, enzyme, and mammal data.
+## First let's fread in the datasets, create smaller versions of them to work with, and then create a tibble with several branch length summary statistics.
 
 ```{r read in the data and make smaller datasets, message=FALSE}
 
@@ -119,10 +119,12 @@ Violin_bl_measurements(summarized_bl, max_bl, "Max_bl", "Estimated Maximum Branc
 ### Now, Let's continue to address our goal, but this time by utilizing linear models to determine if branch length *summary statistics* do indeed differ across protein models. Specifically, we will look at mean branch length, treelength, and max branch length.
 
 First, let's see the function that will be used to conduct this analysis:
-``` {r, bl_lm function with gt chart}
+``` {r, bl_lm function with gt chart, out.width=8, out.height=6}
 
-#linear model with three different types, each with different predictors. Once a lm is performed, do an aov and tukey test for significance and report the results as a table where the models will be compared. Significant p values shown in red. Also include a line_range plot to visualize the tukey comparisons.  The three arguments for this function are the branch length dataframe to be used, the type of model to run, and which summary statistic to run the model on. 
-bl_lm<- function (input_branchlength_df, model_type, dependent_variable_column, plot_title)
+#linear model with three different types, each with different predictors. Once a lm is performed, do an aov and tukey test for significance and report the results as a table where the models will be compared. Significant p values shown in red. The four arguments for this function are the branch length dataframe to be used, the type of model to run, which summary statistic to run the model on, and what to title the table/plot.
+
+#note this function only creates the table, while the later function creates the cooresponding plot for each individual lm. 
+bl_lm_chart<- function (input_branchlength_df, model_type, dependent_variable_column, plot_title)
 {
   input_branchlength_df %>%
     mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling
@@ -151,10 +153,47 @@ fitted_model$model %>%
 
 {
   gt(Chart_output_wide)%>% #the outputs were a little ugly, so put them right into gt chart!!
-    tab_header(title="Tukey Comparisons of Models' Estimates of Branch Length Summary Statistics", subtitle= "Significant P values highlighted in red")%>%
+    tab_header(title=plot_title, subtitle= "Significant P values highlighted in red")%>%
     fmt_number(columns="p adj", decimals=3)%>% #No scientific notation, please and thanks!!
-  data_color(columns = vars("p adj"),colors = scales::col_numeric(palette = c( "red","grey"),  domain = c(0.00, 0.05)))->Table_output
+  data_color(columns = vars("p adj"),colors = scales::col_numeric(palette = c( "red","grey"),  domain = c(0.00, 0.05)))
+}}
+
+  
+```
+
+
+```{r bl_lm function for graph}
+
+#Linear model with three different types, each with different predictors. Once a lm is performed, do an aov and tukey test for significance and report the results as a plot where the models will be compared. Significant values are shown by confidence intervals that do not cross the x=0 line. The four arguments for this function are the branch length dataframe to be used, the type of model to run, which summary statistic to run the model on, and what to title the table/plot.
+
+#Note that this function only creates the graph, and the earlier function creates the cooresponding chart that will be visible for each individual lm.
+
+bl_lm_plot<- function (input_branchlength_df, model_type, dependent_variable_column, plot_title)
+{
+  input_branchlength_df %>%
+    mutate(ASRV_modified= if_else(ASRV==TRUE, "Yes", "No")) -> df_for_modeling
+
+if(model_type == "type_1") #most amount of predictors 
+  {
+  lm({{dependent_variable_column}} ~ model+ dataset+ ASRV_modified, data= df_for_modeling)%>% aov() %>%
+    TukeyHSD()->fitted_model
 } 
+  
+else if (model_type == "type_2") #one less predictor than type 1
+{
+  lm({{dependent_variable_column}} ~ model+ ASRV_modified, data= df_for_modeling) %>% aov() %>%
+    TukeyHSD()->fitted_model
+} 
+else if (model_type == "type_3") #only model is the predictor
+{
+  lm({{dependent_variable_column}} ~ model, data= df_for_modeling) %>% aov() %>%
+    TukeyHSD()->fitted_model
+}
+
+{
+fitted_model$model %>% 
+    as_tibble(rownames = "comparison")-> Chart_output_wide #this makes the output nicer to read/understand
+}
 {
   Chart_output_wide%>%
     pivot_longer(lwr:upr, names_to ="Type_of_coeff", values_to = "Coefficients")->Chart_output_long
@@ -170,11 +209,12 @@ left_join(Chart_output_long, Chart_output_wide)->Chart_output_longandwide #NOW w
     labs(title=plot_title , subtitle= "Significant Results Represented By Lines That Do Not Cross x=0", x="Coefficients", y="Comparisons")->Plot_output
 }
 {
-list("Chart"= Table_output, "Plot"=Plot_output)->plot_and_chart_output
-  print(plot_and_chart_output)
+print(Plot_output)
 }}
-  
 ```
+
+Before we run our linear models, let's take a closer look at these functions.
+
 
 -We can plug in different branch length-related summary stats (`mean_bl`, `max_bl`, or `treelength`) into the `dependent_variable_column` variable in the function. Similarly, we can plug in different branch length datasets by changing the variable for `input_branchlength_df`. 
 
@@ -186,81 +226,138 @@ list("Chart"= Table_output, "Plot"=Plot_output)->plot_and_chart_output
  
 First, we will look at mean branch length as our branch length summary statistic of interest. A detailed analysis of the model outputs can be found after all plots and charts are shown. 
 
-#### Mean Branch Length
-``` {r lm for mean bl}
+# Mean Branch Length
+
+## Summarized_bl mean_bl
+``` {r lm for mean bl summarized}
 #CAN NOT DO TYPE ONE ON THE MAMMALS, ENZYMES, OR BIRDS ALONE SINCE THERE IS NO VARIATION IN THE *DATASET* VARIABLE!!!
 
 #As explained above, there will be one type 1, four type 2, and four type 3 linear models run for the mean_bl summary statistic. Both a plot and chart will be visible for EACH lm performed. 
-bl_lm(summarized_bl, "type_1", summarized_bl$mean_bl,"Type 1 lm Estimates of Mean BL")
-bl_lm(summarized_bl, "type_2", summarized_bl$mean_bl,"Type 2 lm Estimates of Mean BL")
-bl_lm(summarized_bl, "type_3", summarized_bl$mean_bl,"Type 3 lm Estimates of Mean BL")
-
-bl_lm(birds_bl, "type_2", birds_bl$mean_bl, "Type 2 lm Estimates of Mean BL")
-bl_lm(birds_bl, "type_3", birds_bl$mean_bl, "Type 3 lm Estimates of Mean BL")
-
-
-bl_lm (mammals_bl, "type_2", mammals_bl$mean_bl, "Type 2 lm Estimates of Mean BL")
-bl_lm (mammals_bl, "type_3", mammals_bl$mean_bl,"Type 3 lm Estimates of Mean BL")
-
-bl_lm(enzymes_bl, "type_2", enzymes_bl$mean_bl,"Type 2 lm Estimates of Mean BL")
-bl_lm (enzymes_bl, "type_3", enzymes_bl$mean_bl, "Type 3 lm Estimates of Mean BL")
-
-
+bl_lm_chart(summarized_bl, "type_1", summarized_bl$mean_bl,"Type 1 lm Estimates of Mean BL")
+bl_lm_plot(summarized_bl, "type_1", summarized_bl$mean_bl,"Type 1 lm Estimates of Mean BL")
+bl_lm_chart(summarized_bl, "type_2", summarized_bl$mean_bl,"Type 2 lm Estimates of Mean BL")
+bl_lm_plot(summarized_bl, "type_2", summarized_bl$mean_bl,"Type 2 lm Estimates of Mean BL")
+bl_lm_chart(summarized_bl, "type_3", summarized_bl$mean_bl,"Type 3 lm Estimates of Mean BL")
+bl_lm_plot(summarized_bl, "type_3", summarized_bl$mean_bl,"Type 3 lm Estimates of Mean BL")
 ```
 
-#### Treelength
+
+## Birds_bl mean_bl
+```{r, lm for mean bl birds}
+bl_lm_chart(birds_bl, "type_2", birds_bl$mean_bl, "Type 2 lm Estimates of Mean BL")
+bl_lm_plot(birds_bl, "type_2", birds_bl$mean_bl, "Type 2 lm Estimates of Mean BL")
+bl_lm_chart(birds_bl, "type_3", birds_bl$mean_bl, "Type 3 lm Estimates of Mean BL")
+bl_lm_plot(birds_bl, "type_3", birds_bl$mean_bl, "Type 3 lm Estimates of Mean BL")
+```
+
+
+## Mammals_bl mean_bl
+```{r,lm for mean bl mammals }
+
+bl_lm_chart (mammals_bl, "type_2", mammals_bl$mean_bl, "Type 2 lm Estimates of Mean BL")
+bl_lm_plot (mammals_bl, "type_2", mammals_bl$mean_bl, "Type 2 lm Estimates of Mean BL")
+bl_lm_chart (mammals_bl, "type_3", mammals_bl$mean_bl,"Type 3 lm Estimates of Mean BL")
+bl_lm_plot (mammals_bl, "type_3", mammals_bl$mean_bl,"Type 3 lm Estimates of Mean BL")
+```
+
+## Enzymes_bl mean_bl
+```{r lm for mean bl enzymes}
+bl_lm_chart(enzymes_bl, "type_2", enzymes_bl$mean_bl,"Type 2 lm Estimates of Mean BL")
+bl_lm_plot(enzymes_bl, "type_2", enzymes_bl$mean_bl,"Type 2 lm Estimates of Mean BL")
+bl_lm_chart (enzymes_bl, "type_3", enzymes_bl$mean_bl, "Type 3 lm Estimates of Mean BL")
+bl_lm_plot (enzymes_bl, "type_3", enzymes_bl$mean_bl, "Type 3 lm Estimates of Mean BL")
+```
+
+# Treelength
 Next, we will look at treelength as our branch length summary statistic of interest.
-```{r lm for treelength}
+
+## Summarized_bl Treelength
+```{r lm for treelength summarized }
 #CAN NOT DO TYPE ONE ON THE MAMMALS, ENZYMES, OR BIRDS ALONE SINCE THERE IS NO VARIATION IN THE *DATASET* VARIABLE!!!
 
 #As explained above, there will be one type 1, four type 2, and four type 3 linear models run for the treelength summary statistic.
-bl_lm(summarized_bl, "type_1", summarized_bl$treelength,"Type 1 lm Estimates of Treelength")
-bl_lm(summarized_bl, "type_2", summarized_bl$treelength, "Type 2 lm Estimates of Treelength")
-bl_lm(summarized_bl, "type_3", summarized_bl$treelength, "Type 3 lm Estimates of Treelength")
+bl_lm_chart(summarized_bl, "type_1", summarized_bl$treelength,"Type 1 lm Estimates of Treelength")
+bl_lm_plot(summarized_bl, "type_1", summarized_bl$treelength,"Type 1 lm Estimates of Treelength")
+bl_lm_chart(summarized_bl, "type_2", summarized_bl$treelength, "Type 2 lm Estimates of Treelength")
+bl_lm_plot(summarized_bl, "type_2", summarized_bl$treelength, "Type 2 lm Estimates of Treelength")
+bl_lm_chart(summarized_bl, "type_3", summarized_bl$treelength, "Type 3 lm Estimates of Treelength")
+bl_lm_plot(summarized_bl, "type_3", summarized_bl$treelength, "Type 3 lm Estimates of Treelength")
 
+```
 
-bl_lm(birds_bl, "type_2", birds_bl$treelength,"Type 2 lm Estimates of Treelength")
-bl_lm(birds_bl, "type_3", birds_bl$treelength,"Type 3 lm Estimates of Treelength")
+## Birds_bl Treelength
+```{r lm for treelength birds}
 
+bl_lm_chart(birds_bl, "type_2", birds_bl$treelength,"Type 2 lm Estimates of Treelength")
+bl_lm_plot(birds_bl, "type_2", birds_bl$treelength,"Type 2 lm Estimates of Treelength")
+bl_lm_chart(birds_bl, "type_3", birds_bl$treelength,"Type 3 lm Estimates of Treelength")
+bl_lm_plot(birds_bl, "type_3", birds_bl$treelength,"Type 3 lm Estimates of Treelength")
+```
 
-bl_lm(mammals_bl, "type_2", mammals_bl$treelength,"Type 2 lm Estimates of Treelength")
-bl_lm(mammals_bl, "type_3", mammals_bl$treelength,"Type 3 lm Estimates of Treelength")
+## Mammals_bl Treelength
+```{r lm for treelength mammals}
 
+bl_lm_chart(mammals_bl, "type_2", mammals_bl$treelength,"Type 2 lm Estimates of Treelength")
+bl_lm_plot(mammals_bl, "type_2", mammals_bl$treelength,"Type 2 lm Estimates of Treelength")
+bl_lm_chart(mammals_bl, "type_3", mammals_bl$treelength,"Type 3 lm Estimates of Treelength")
+bl_lm_plot(mammals_bl, "type_3", mammals_bl$treelength,"Type 3 lm Estimates of Treelength")
+```
 
-bl_lm(enzymes_bl, "type_2", enzymes_bl$treelength,"Type 2 lm Estimates of Treelength")
-bl_lm(enzymes_bl, "type_3", enzymes_bl$treelength, "Type 3 lm Estimates of Treelength")
+## Enzymes_bl Treelength
+```{r lm for treelength enzymes}
+
+bl_lm_chart(enzymes_bl, "type_2", enzymes_bl$treelength,"Type 2 lm Estimates of Treelength")
+bl_lm_plot(enzymes_bl, "type_2", enzymes_bl$treelength,"Type 2 lm Estimates of Treelength")
+bl_lm_chart(enzymes_bl, "type_3", enzymes_bl$treelength, "Type 3 lm Estimates of Treelength")
+bl_lm_plot(enzymes_bl, "type_3", enzymes_bl$treelength, "Type 3 lm Estimates of Treelength")
 
 ```
 
 
-#### Max Branch Length
+# Max Branch Length
 Finally, we will look at max branch length as our summary statistic of interest. 
-```{r lm for max_bl}
+
+## Summarized_bl max_bl
+```{r lm for max_bl summarized}
 #CAN NOT DO TYPE ONE MODEL ON THE MAMMALS, ENZYMES, OR BIRDS ALONE SINCE THERE IS NO VARIATION IN THE *DATASET* VARIABLE!!!
 
 #As explained above, there will be one type 1, four type 2, and four type 3 linear models run for the treelength summary statistic, each with a chart and plot.
-bl_lm(summarized_bl, "type_1", summarized_bl$max_bl,"Type 1 lm Estimates of Max BL")
-bl_lm(summarized_bl, "type_2", summarized_bl$max_bl,"Type 2 lm Estimates of Max BL")
-bl_lm(summarized_bl, "type_3", summarized_bl$max_bl,"Type 3 lm Estimates of Max BL")
+bl_lm_chart(summarized_bl, "type_1", summarized_bl$max_bl,"Type 1 lm Estimates of Max BL")
+bl_lm_plot(summarized_bl, "type_1", summarized_bl$max_bl,"Type 1 lm Estimates of Max BL")
+bl_lm_chart(summarized_bl, "type_2", summarized_bl$max_bl,"Type 2 lm Estimates of Max BL")
+bl_lm_plot(summarized_bl, "type_2", summarized_bl$max_bl,"Type 2 lm Estimates of Max BL")
+bl_lm_chart(summarized_bl, "type_3", summarized_bl$max_bl,"Type 3 lm Estimates of Max BL")
+bl_lm_plot(summarized_bl, "type_3", summarized_bl$max_bl,"Type 3 lm Estimates of Max BL")
+```
+
+## Birds_bl max_bl
+```{r lm for max bl birds}
+bl_lm_chart(birds_bl, "type_2", birds_bl$max_bl,"Type 2 lm Estimates of Max BL")
+bl_lm_plot(birds_bl, "type_2", birds_bl$max_bl,"Type 2 lm Estimates of Max BL")
+bl_lm_chart(birds_bl, "type_3", birds_bl$max_bl,"Type 3 lm Estimates of Max BL")
+bl_lm_plot(birds_bl, "type_3", birds_bl$max_bl,"Type 3 lm Estimates of Max BL")
+```
 
 
-bl_lm(birds_bl, "type_2", birds_bl$max_bl,"Type 2 lm Estimates of Max BL")
-bl_lm(birds_bl, "type_3", birds_bl$max_bl,"Type 3 lm Estimates of Max BL")
+## Mammals_bl max_bl
+```{r lm for max bl mammals}
+bl_lm_chart(mammals_bl, "type_2", mammals_bl$max_bl,"Type 2 lm Estimates of Max BL")
+bl_lm_plot(mammals_bl, "type_2", mammals_bl$max_bl,"Type 2 lm Estimates of Max BL")
+bl_lm_chart(mammals_bl, "type_3", mammals_bl$max_bl,"Type 3 lm Estimates of Max BL")
+bl_lm_plot(mammals_bl, "type_3", mammals_bl$max_bl,"Type 3 lm Estimates of Max BL")
+```
 
-
-bl_lm(mammals_bl, "type_2", mammals_bl$max_bl,"Type 2 lm Estimates of Max BL")
-bl_lm(mammals_bl, "type_3", mammals_bl$max_bl,"Type 3 lm Estimates of Max BL")
-
-
-bl_lm(enzymes_bl, "type_2", enzymes_bl$max_bl, "Type 2 lm Estimates of Max BL")
-bl_lm(enzymes_bl, "type_3", enzymes_bl$max_bl,"Type 3 lm Estimates of Max BL")
-
-
+## Enzymes_bl max_bl
+``` {r lm for max bl enzymes}
+bl_lm_chart(enzymes_bl, "type_2", enzymes_bl$max_bl, "Type 2 lm Estimates of Max BL")
+bl_lm_plot(enzymes_bl, "type_2", enzymes_bl$max_bl, "Type 2 lm Estimates of Max BL")
+bl_lm_chart(enzymes_bl, "type_3", enzymes_bl$max_bl,"Type 3 lm Estimates of Max BL")
+bl_lm_plot(enzymes_bl, "type_3", enzymes_bl$max_bl,"Type 3 lm Estimates of Max BL")
 ```
 
 <br><br>
 
-#### What Did We Learn from all of that modeling?
+## What Did We Learn from all of that modeling?
 -Before we begin to analyze any of the linear models constructed above, it is vital to understand that these results were obtained from small *slices* of the full datasets.
 
 -Many of the significant findings occur when comparing Poisson to FLU, which is not surprising when considering our earlier results seen in the violin plots.
