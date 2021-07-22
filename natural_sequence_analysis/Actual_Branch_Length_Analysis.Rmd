@@ -1,0 +1,122 @@
+---
+title: "Actual Branch Length Analysis"
+output: 
+  prettydoc::html_pretty:
+    theme: "cayman"
+params: 
+  mini: TRUE
+  mini_n: 30
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, include = TRUE)
+library(tidyverse)
+source("utils.R")
+path_to_data <- "./" 
+```
+
+## Goal
+The primary goal of this analysis is to determine if the literal branch length estimates themselves differ across protein models. 
+<br>
+First, let's read in the datasets and create smaller versions of them that are easier to work with, just like last time.
+
+```{r read in the data and make smaller datasets, message=FALSE}
+
+birds_file <- file.path(path_to_data, "bird_empirical_branch_lengths.csv")
+mammals_file <- file.path(path_to_data, "mammal_empirical_branch_lengths.csv")
+enzymes_file <- file.path(path_to_data, "enzyme_empirical_branch_lengths.csv")
+
+
+birds   <- read_csv(birds_file) %>% mutate(dataset =  "birds", id = as.character(id)) #might as well mutate here so we can bind rows later 
+mammals <- read_csv(mammals_file) %>% mutate(dataset =  "mammals", id = as.character(id))
+enzymes <- read_csv(enzymes_file) %>% mutate(dataset =  "enzymes", id = as.character(id))
+
+# Downsample for mini analysis only
+minify <- function(df) 
+{
+  df %>%
+    group_by(id) %>% 
+    nest() %>% #condense each id into its own tibble-like thing 
+    ungroup() %>%
+    slice(1:params$mini_n) %>% #this takes the first *however many* rows from the dataset. The *however many* is specified by the params$mini_n
+    unnest(cols = c(data))
+}
+
+if (params$mini == TRUE) #if we want to use the mini versions of the datasets, then use the mini function on each of them!!
+{
+  minify(birds) -> birds 
+  minify(enzymes) -> enzymes
+  minify(mammals) -> mammals
+}
+
+
+bind_rows(mammals, enzymes, birds) -> full_data #this is just one big data frame consisting of the three datasets
+
+
+```
+
+## The enzyme, mammal, and enzyme data all together
+
+```{r show_bl, echo=TRUE}
+print(full_data) 
+```
+
+
+## The Data Pivoted to Show comparisons
+```{r, pivot full data, echo=TRUE}
+  
+full_data %>%
+  unite(combined_model, model, ASRV) %>%
+  group_by(id, dataset) %>%
+  pivot_wider(names_from = combined_model, 
+              values_from = branch_length) %>%
+  ungroup() -> input_data
+
+```
+
+
+
+```{r,show input data}
+print(input_data)
+
+```
+
+
+
+## lm Function 
+```{r, lm function, echo=TRUE}
+lm_poisson_f<- function(other_models, df)
+{
+  lm(Poisson_FALSE~{{other_models}},data=df)
+}
+
+
+
+```
+
+## Pivot longer and Use the lm function
+```{r, pivot full data and use lm, echo=TRUE}
+
+
+lm_function_each_col<-function(df)
+{
+  input_data %>%
+  select(-node) %>%
+  group_by(id, dataset) %>%
+  nest()
+  mutate(lm_fit=map(data,lm_poisson_f))%>%
+  select(-data) %>%
+  unnest(cols = c(lm_fit)) %>%
+  pivot_longer(contains("_"), 
+               names_to = "term2", 
+               values_to = "fit")
+}
+
+```
+
+
+
+
+
