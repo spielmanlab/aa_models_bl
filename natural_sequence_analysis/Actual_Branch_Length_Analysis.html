@@ -139,7 +139,7 @@ a.sourceLine {
 <div id="the-enzyme-mammal-and-enzyme-data-all-together" class="section level2">
 <h2>The enzyme, mammal, and enzyme data all together</h2>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(full_data) </span></code></pre></div>
-<pre><code>## # A tibble: 99,650 x 6
+<pre><code>## # A tibble: 8,900 x 6
 ##    id                 model ASRV   node branch_length dataset
 ##    &lt;chr&gt;              &lt;chr&gt; &lt;lgl&gt; &lt;dbl&gt;         &lt;dbl&gt; &lt;chr&gt;  
 ##  1 ENSG00000000003_AA FLU   FALSE     1       0.00472 mammals
@@ -152,17 +152,20 @@ a.sourceLine {
 ##  8 ENSG00000000003_AA FLU   FALSE     8       0.00801 mammals
 ##  9 ENSG00000000003_AA FLU   FALSE     9       0.0168  mammals
 ## 10 ENSG00000000003_AA FLU   FALSE    10       0.00440 mammals
-## # … with 99,640 more rows</code></pre>
+## # … with 8,890 more rows</code></pre>
 </div>
-<div id="the-data-pivoted-to-show-comparisons" class="section level2">
-<h2>The Data Pivoted to Show comparisons</h2>
+<div id="the-data-pivoted-wide-to-show-all-models-branch-lengths-and-pivoted-again-to-compare-poisson-branch-lengths-with-all-others" class="section level2">
+<h2>The data pivoted wide to show all models’ branch lengths and pivoted again to compare Poisson branch lengths with all others</h2>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>full_data <span class="sc">%&gt;%</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unite</span>(combined_model, model, ASRV) <span class="sc">%&gt;%</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(id, dataset) <span class="sc">%&gt;%</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> combined_model, </span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>              <span class="at">values_from =</span> branch_length) <span class="sc">%&gt;%</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="ot">-&gt;</span> input_data</span></code></pre></div>
-<pre><code>## # A tibble: 9,965 x 13
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="ot">-&gt;</span> input_data</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>input_data<span class="sc">%&gt;%</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="fu">pivot_longer</span>( <span class="sc">-</span><span class="fu">c</span>(id, node, dataset, Poisson_FALSE), <span class="at">names_to =</span> <span class="st">&quot;model_type&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;branchlength&quot;</span>)<span class="ot">-&gt;</span>input_poisson_f</span></code></pre></div>
+<pre><code>## # A tibble: 890 x 13
 ##    id     node dataset FLU_FALSE FLU_TRUE JTT_FALSE JTT_TRUE LG_FALSE LG_TRUE
 ##    &lt;chr&gt; &lt;dbl&gt; &lt;chr&gt;       &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;   &lt;dbl&gt;
 ##  1 ENSG…     1 mammals   0.00472  0.00554   0.00467  0.00496  0.00469 0.00530
@@ -175,31 +178,57 @@ a.sourceLine {
 ##  8 ENSG…     8 mammals   0.00801  0.00955   0.00809  0.00881  0.00806 0.00927
 ##  9 ENSG…     9 mammals   0.0168   0.0206    0.0166   0.0184   0.0168  0.0201 
 ## 10 ENSG…    10 mammals   0.00440  0.00512   0.00447  0.00475  0.00439 0.00501
-## # … with 9,955 more rows, and 4 more variables: Poisson_FALSE &lt;dbl&gt;,
+## # … with 880 more rows, and 4 more variables: Poisson_FALSE &lt;dbl&gt;,
 ## #   Poisson_TRUE &lt;dbl&gt;, WAG_FALSE &lt;dbl&gt;, WAG_TRUE &lt;dbl&gt;</code></pre>
+<pre><code>## # A tibble: 8,010 x 6
+##    id                  node dataset Poisson_FALSE model_type   branchlength
+##    &lt;chr&gt;              &lt;dbl&gt; &lt;chr&gt;           &lt;dbl&gt; &lt;chr&gt;               &lt;dbl&gt;
+##  1 ENSG00000000003_AA     1 mammals       0.00462 FLU_FALSE         0.00472
+##  2 ENSG00000000003_AA     1 mammals       0.00462 FLU_TRUE          0.00554
+##  3 ENSG00000000003_AA     1 mammals       0.00462 JTT_FALSE         0.00467
+##  4 ENSG00000000003_AA     1 mammals       0.00462 JTT_TRUE          0.00496
+##  5 ENSG00000000003_AA     1 mammals       0.00462 LG_FALSE          0.00469
+##  6 ENSG00000000003_AA     1 mammals       0.00462 LG_TRUE           0.00530
+##  7 ENSG00000000003_AA     1 mammals       0.00462 Poisson_TRUE      0.00485
+##  8 ENSG00000000003_AA     1 mammals       0.00462 WAG_FALSE         0.00466
+##  9 ENSG00000000003_AA     1 mammals       0.00462 WAG_TRUE          0.00493
+## 10 ENSG00000000003_AA     2 mammals       0.0248  FLU_FALSE         0.0250 
+## # … with 8,000 more rows</code></pre>
 </div>
-<div id="lm-function" class="section level2">
-<h2>lm Function</h2>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>lm_poisson_f<span class="ot">&lt;-</span> <span class="cf">function</span>(other_models, df)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>{</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lm</span>(Poisson_FALSE<span class="sc">~</span>{{other_models}},<span class="at">data=</span>df)</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-</div>
-<div id="pivot-longer-and-use-the-lm-function" class="section level2">
-<h2>Pivot longer and Use the lm function</h2>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>lm_function_each_col<span class="ot">&lt;-</span><span class="cf">function</span>(df)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>{</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  input_data <span class="sc">%&gt;%</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>node) <span class="sc">%&gt;%</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(id, dataset) <span class="sc">%&gt;%</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nest</span>()</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">lm_fit=</span><span class="fu">map</span>(data,lm_poisson_f))<span class="sc">%&gt;%</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>data) <span class="sc">%&gt;%</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest</span>(<span class="at">cols =</span> <span class="fu">c</span>(lm_fit)) <span class="sc">%&gt;%</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">contains</span>(<span class="st">&quot;_&quot;</span>), </span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>               <span class="at">names_to =</span> <span class="st">&quot;term2&quot;</span>, </span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>               <span class="at">values_to =</span> <span class="st">&quot;fit&quot;</span>)</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div id="perform-a-lm-of-poisson_falsebranchlength-with-the-help-of-nest-and-broom." class="section level2">
+<h2>Perform a lm of Poisson_FALSE~branchlength, with the help of nest() and broom().</h2>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>input_poisson_f<span class="sc">%&gt;%</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>node) <span class="sc">%&gt;%</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(id, dataset, model_type)<span class="sc">%&gt;%</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">nest</span>()<span class="sc">%&gt;%</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">lm_fit=</span><span class="fu">map</span>(data, <span class="sc">~</span><span class="fu">lm</span>(Poisson_FALSE<span class="sc">~</span>branchlength, <span class="at">data=</span>.)))<span class="ot">-&gt;</span>Testing_nested</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>Testing_nested<span class="sc">%&gt;%</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>data)<span class="sc">%&gt;%</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">tidied=</span><span class="fu">map</span>(lm_fit, broom<span class="sc">::</span>tidy))<span class="sc">%&gt;%</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest</span>(<span class="at">cols =</span> <span class="fu">c</span>(tidied))<span class="ot">-&gt;</span>Testing_unnested</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>Testing_unnested<span class="sc">%&gt;%</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(term <span class="sc">==</span> <span class="st">&quot;(Intercept)&quot;</span>)<span class="sc">%&gt;%</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(id, dataset, model_type, estimate)<span class="ot">-&gt;</span>Testing_df</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>Testing_df</span></code></pre></div>
+<pre><code>## # A tibble: 81 x 4
+## # Groups:   id, dataset, model_type [81]
+##    id                 dataset model_type    estimate
+##    &lt;chr&gt;              &lt;chr&gt;   &lt;chr&gt;            &lt;dbl&gt;
+##  1 ENSG00000000003_AA mammals FLU_FALSE    0.000565 
+##  2 ENSG00000000003_AA mammals FLU_TRUE     0.00175  
+##  3 ENSG00000000003_AA mammals JTT_FALSE    0.000172 
+##  4 ENSG00000000003_AA mammals JTT_TRUE     0.00114  
+##  5 ENSG00000000003_AA mammals LG_FALSE     0.000204 
+##  6 ENSG00000000003_AA mammals LG_TRUE      0.00118  
+##  7 ENSG00000000003_AA mammals Poisson_TRUE 0.000904 
+##  8 ENSG00000000003_AA mammals WAG_FALSE    0.000124 
+##  9 ENSG00000000003_AA mammals WAG_TRUE     0.000962 
+## 10 ENSG00000000005_AA mammals FLU_FALSE    0.0000266
+## # … with 71 more rows</code></pre>
 </div>
 </section>
 

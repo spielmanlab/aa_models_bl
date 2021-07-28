@@ -5,7 +5,7 @@ output:
     theme: "cayman"
 params: 
   mini: TRUE
-  mini_n: 30
+  mini_n: 3
 editor_options: 
   chunk_output_type: console
 ---
@@ -13,6 +13,7 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, include = TRUE)
 library(tidyverse)
+library(broom)
 source("utils.R")
 path_to_data <- "./" 
 ```
@@ -64,7 +65,7 @@ print(full_data)
 ```
 
 
-## The Data Pivoted wide to show all models and pivoted again to compare Poisson branchlengths with all others 
+## The data pivoted wide to show all models' branch lengths and pivoted again to compare Poisson branch lengths with all others 
 ```{r, pivot full data, echo=TRUE}
   
 full_data %>%
@@ -75,7 +76,7 @@ full_data %>%
   ungroup() -> input_data
 
 input_data%>%
-pivot_longer( c(FLU_FALSE,FLU_TRUE,JTT_FALSE, JTT_TRUE, LG_FALSE, LG_TRUE, Poisson_TRUE, WAG_FALSE, WAG_TRUE), names_to = "model_type", values_to = "branchlength")->input_poisson_f
+pivot_longer( -c(id, node, dataset, Poisson_FALSE), names_to = "model_type", values_to = "branchlength")->input_poisson_f
 
 ```
 
@@ -87,23 +88,31 @@ print(input_poisson_f)
 ```
 
 
-## Use the lm function
+## Perform a lm of Poisson_FALSE~branchlength, with the help of nest() and broom().
 ```{r, pivot full data and use lm, echo=TRUE}
-
 
 input_poisson_f%>%
   select(-node) %>%
   group_by(id, dataset, model_type)%>%
   tidyr::nest()%>%
-  mutate(lm_fit=map(data, ~lm(Poisson_FALSE~branchlength, data=.)))%>%
-  select(-data)%>%
-  unnest(lm_fit)->Testing123
+  mutate(lm_fit=map(data, ~lm(Poisson_FALSE~branchlength, data=.)))->nested
 
-print(Testing123)
+
+nested%>%
+  select(-data)%>%
+  mutate(tidied=map(lm_fit, broom::tidy))%>%
+  unnest(cols = c(tidied))->unnested
+
+unnested%>%
+  filter(term == "(Intercept)")%>%
+  select(id, dataset, model_type, estimate)->Intercepts_df
+
+Intercepts_df
+ 
 
 ```
 
 
-
+```{r, ggplot the Intercepts}
 
 
