@@ -5,7 +5,7 @@ output:
     theme: "cayman"
 params: 
   mini: TRUE
-  mini_n: 3
+  mini_n: 30
 editor_options: 
   chunk_output_type: console
 ---
@@ -14,7 +14,6 @@ editor_options:
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, include = TRUE)
 library(tidyverse)
 library(broom)
-source("utils.R")
 path_to_data <- "./" 
 ```
 
@@ -105,14 +104,36 @@ nested%>%
 
 unnested%>%
   filter(term == "(Intercept)")%>%
-  select(id, dataset, model_type, estimate)->Intercepts_df
+  select(id, dataset, model_type, estimate)%>%
+  rename(intercept=estimate)->Intercepts_df
 
-Intercepts_df
- 
 
 ```
 
+##Pull out the intercepts from the lm 
+```{r, show intercepts dataframe}
+print(Intercepts_df)
 
-```{r, ggplot the Intercepts}
+```
+
+## Create a boxplot of the intercepts 
+```{r, ggplot the Intercepts, fig.width=10, fig.height=8}
+ggplot(Intercepts_df)+
+  aes(x=model_type, y=intercept, fill=model_type)+
+  geom_boxplot()+
+  theme_classic()+
+  scale_fill_brewer(palette = "Dark2", name= "Model Type")+
+  labs(x="Model Type", y= "Intercept of lm Poisson_FALSE~ branch length", title = "Boxplots of branch length lm intercepts")->boxplot_intercepts
+
+boxplot_intercepts
 
 
+```
+
+## Analysis
+
+-intercepts of this lm represent the Poisson_FALSE branch length when the other models' branch length is zero (y-intercept occurs when x=0, and in our case, the other models' branch lengths serve as our predictor)
+
+-There is less deiscepency bewteen ASRV- plots, but more when you compare ASRV- to ASRV+
+
+- It appears that Poisson_False actually slightly overestimates the FLU_TRUE, JTT_TRUE, and LG_TRUE branch lengths (when these predictors are at zero, Poisson_FALSE estimates the branch length to be greater than zero)
