@@ -4,7 +4,7 @@ output:
   prettydoc::html_pretty:
     theme: "cayman"
 params: 
-  mini: TRUE
+  mini: FALSE
   mini_n: 30
 editor_options: 
   chunk_output_type: console
@@ -64,6 +64,7 @@ print(full_data)
 ```
 
 
+
 ## The data pivoted wide to show all models' branch lengths and pivoted again to compare Poisson branch lengths with all others 
 ```{r, pivot full data, echo=TRUE}
   
@@ -80,6 +81,21 @@ pivot_longer( -c(id, node, dataset, Poisson_FALSE), names_to = "model_type", val
 ```
 
 
+## Let's see how one looks to get a better sense of the data we're modeling
+
+```{r a_scatter}
+input_poisson_f %>%
+  filter(id == "13PK_A") %>%
+  ggplot(aes(x = Poisson_FALSE, 
+             y = branchlength, 
+             color = model_type)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", color = "black") +
+  geom_abline(color = "red") + 
+  facet_wrap(vars(model_type)) +
+  theme(legend.position = "none")
+```
+
 
 ```{r,show input data}
 print(input_data)
@@ -87,14 +103,18 @@ print(input_poisson_f)
 ```
 
 
-## Perform a lm of Poisson_FALSE~branchlength, with the help of nest() and broom().
-```{r, pivot full data and use lm, echo=TRUE}
+## Perform a glm of OFFSETTED branchlength~Poisson_FALSE, with the help of `tidyr::nest()` and `{broom}`.
 
+> The slope is _forced to be 1_. The intercept therefore tells us the _bias of the esimator_ compared to truth.
+> We "define truth" as Poisson_FALSE
+> Intercept means: What is the difference between other model's bl - Poisson_FALSE bl
+
+```{r, pivot full data and use lm, echo=TRUE}
 input_poisson_f%>%
   select(-node) %>%
   group_by(id, dataset, model_type)%>%
   tidyr::nest()%>%
-  mutate(lm_fit=map(data, ~lm(Poisson_FALSE~branchlength, data=.)))->nested
+  mutate(lm_fit=map(data, ~glm(branchlength ~ offset(Poisson_FALSE), data=.)))->nested
 
 
 nested%>%
@@ -107,27 +127,24 @@ unnested%>%
   select(id, dataset, model_type, estimate)%>%
   rename(intercept=estimate)->Intercepts_df
 
-
+readr::write_csv(Intercepts_df, "biasintercepts_poisson_false.csv")
 ```
 
-##Pull out the intercepts from the lm 
+## Pull out the intercepts from the lm 
 ```{r, show intercepts dataframe}
-print(Intercepts_df)
+#print(Intercepts_df)
 
 ```
 
-## Create a boxplot of the intercepts 
+## Create a jitter of the intercepts 
 ```{r, ggplot the Intercepts, fig.width=10, fig.height=8}
-ggplot(Intercepts_df)+
-  aes(x=model_type, y=intercept, fill=model_type)+
-  geom_boxplot()+
-  theme_classic()+
-  scale_fill_brewer(palette = "Dark2", name= "Model Type")+
-  labs(x="Model Type", y= "Intercept of lm Poisson_FALSE~ branch length", title = "Boxplots of branch length lm intercepts")->boxplot_intercepts
-
-boxplot_intercepts
-
-
+#ggplot(Intercepts_df)+
+#  aes(x=model_type, y=intercept, fill=model_type)+
+#  geom_jitter(width = 0.1, pch = 21) + 
+#  theme_classic()+
+#  scale_fill_brewer(palette = "Dark2", name= "Model Type")+
+#  labs(x="Model Type", 
+#       y= "Intercept of lm branch length ~ offset(Poisson_FALSE)", title = "Jitter of branch length lm intercepts")
 ```
 
 ## Analysis
