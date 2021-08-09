@@ -1,0 +1,156 @@
+---
+title: "Actual Branch Length Analysis"
+output: 
+  prettydoc::html_pretty:
+    theme: "cayman"
+params: 
+  mini: FALSE
+  mini_n: 30
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, include = TRUE)
+library(tidyverse)
+library(broom)
+path_to_data <- "./" 
+```
+
+## Goal
+The primary goal of this analysis is to determine if the literal branch length estimates themselves differ across protein models. 
+<br>
+First, let's read in the datasets and create smaller versions of them that are easier to work with, just like last time.
+
+```{r read in the data and make smaller datasets, message=FALSE}
+
+birds_file <- file.path(path_to_data, "bird_empirical_branch_lengths.csv")
+mammals_file <- file.path(path_to_data, "mammal_empirical_branch_lengths.csv")
+enzymes_file <- file.path(path_to_data, "enzyme_empirical_branch_lengths.csv")
+
+
+birds   <- read_csv(birds_file) %>% mutate(dataset =  "birds", id = as.character(id)) #might as well mutate here so we can bind rows later 
+mammals <- read_csv(mammals_file) %>% mutate(dataset =  "mammals", id = as.character(id))
+enzymes <- read_csv(enzymes_file) %>% mutate(dataset =  "enzymes", id = as.character(id))
+
+# Downsample for mini analysis only
+minify <- function(df) 
+{
+  df %>%
+    group_by(id) %>% 
+    nest() %>% #condense each id into its own tibble-like thing 
+    ungroup() %>%
+    slice(1:params$mini_n) %>% #this takes the first *however many* rows from the dataset. The *however many* is specified by the params$mini_n
+    unnest(cols = c(data))
+}
+
+if (params$mini == TRUE) #if we want to use the mini versions of the datasets, then use the mini function on each of them!!
+{
+  minify(birds) -> birds 
+  minify(enzymes) -> enzymes
+  minify(mammals) -> mammals
+}
+
+
+bind_rows(mammals, enzymes, birds) -> full_data #this is just one big data frame consisting of the three datasets
+
+
+```
+
+## The enzyme, mammal, and enzyme data all together
+
+```{r show_bl, echo=TRUE}
+print(full_data) 
+```
+
+
+
+## The data pivoted wide to show all models' branch lengths and pivoted again to compare Poisson branch lengths with all others 
+```{r, pivot full data, echo=TRUE}
+  
+full_data %>%
+  unite(combined_model, model, ASRV) %>%
+  group_by(id, dataset) %>%
+  pivot_wider(names_from = combined_model, 
+              values_from = branch_length) %>%
+  ungroup() -> input_data
+
+input_data%>%
+pivot_longer( -c(id, node, dataset, Poisson_FALSE), names_to = "model_type", values_to = "branchlength")->input_poisson_f
+
+```
+
+
+## Let's see how one looks to get a better sense of the data we're modeling
+
+```{r a_scatter}
+input_poisson_f %>%
+  filter(id == "13PK_A") %>%
+  ggplot(aes(x = Poisson_FALSE, 
+             y = branchlength, 
+             color = model_type)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", color = "black") +
+  geom_abline(color = "red") + 
+  facet_wrap(vars(model_type)) +
+  theme(legend.position = "none")
+```
+
+
+```{r,show input data}
+print(input_data)
+print(input_poisson_f)
+```
+
+
+## Perform a glm of OFFSETTED branchlength~Poisson_FALSE, with the help of `tidyr::nest()` and `{broom}`.
+
+> The slope is _forced to be 1_. The intercept therefore tells us the _bias of the esimator_ compared to truth.
+> We "define truth" as Poisson_FALSE
+> Intercept means: What is the difference between other model's bl - Poisson_FALSE bl
+
+```{r, pivot full data and use lm, echo=TRUE}
+input_poisson_f%>%
+  select(-node) %>%
+  group_by(id, dataset, model_type)%>%
+  tidyr::nest()%>%
+  mutate(lm_fit=map(data, ~glm(branchlength ~ offset(Poisson_FALSE), data=.)))->nested
+
+
+nested%>%
+  select(-data)%>%
+  mutate(tidied=map(lm_fit, broom::tidy))%>%
+  unnest(cols = c(tidied))->unnested
+
+unnested%>%
+  filter(term == "(Intercept)")%>%
+  select(id, dataset, model_type, estimate)%>%
+  rename(intercept=estimate)->Intercepts_df
+
+readr::write_csv(Intercepts_df, "biasintercepts_poisson_false.csv")
+```
+
+## Pull out the intercepts from the lm 
+```{r, show intercepts dataframe}
+#print(Intercepts_df)
+
+```
+
+## Create a jitter of the intercepts 
+```{r, ggplot the Intercepts, fig.width=10, fig.height=8}
+#ggplot(Intercepts_df)+
+#  aes(x=model_type, y=intercept, fill=model_type)+
+#  geom_jitter(width = 0.1, pch = 21) + 
+#  theme_classic()+
+#  scale_fill_brewer(palette = "Dark2", name= "Model Type")+
+#  labs(x="Model Type", 
+#       y= "Intercept of lm branch length ~ offset(Poisson_FALSE)", title = "Jitter of branch length lm intercepts")
+```
+
+## Analysis
+
+-intercepts of this lm represent the Poisson_FALSE branch length when the other models' branch length is zero (y-intercept occurs when x=0, and in our case, the other models' branch lengths serve as our predictor)
+
+-There is less deiscepency bewteen ASRV- plots, but more when you compare ASRV- to ASRV+
+
+- It appears that Poisson_False actually slightly overestimates the FLU_TRUE, JTT_TRUE, and LG_TRUE branch lengths (when these predictors are at zero, Poisson_FALSE estimates the branch length to be greater than zero)

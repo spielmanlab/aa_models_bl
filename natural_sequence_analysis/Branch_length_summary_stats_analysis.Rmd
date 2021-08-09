@@ -1,0 +1,285 @@
+---
+title: "Branch Length Summary Stats Analysis"
+output: 
+  prettydoc::html_pretty:
+    theme: "cayman"
+params: 
+  mini: FALSE
+  mini_n: 30
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo= FALSE, include = TRUE)
+library(tidyverse)
+library(cowplot)
+library(gt)
+library(patchwork)
+source("utils.R")
+path_to_data <- "./" 
+```
+
+## Goal
+The primary goal of this analysis is to determine whether branch length summary statistics differ across protein models.
+
+## First let's read in the datasets, create smaller versions of them to work with, and then create a tibble with several branch length summary statistics.
+
+```{r read in the data and make smaller datasets, message=FALSE}
+
+
+birds_file <- file.path(path_to_data, "bird_empirical_branch_lengths.csv")
+mammals_file <- file.path(path_to_data, "mammal_empirical_branch_lengths.csv")
+enzymes_file <- file.path(path_to_data, "enzyme_empirical_branch_lengths.csv")
+
+
+birds   <- read_csv(birds_file) %>% mutate(dataset =  "birds", id = as.character(id)) #might as well mutate here so we can bind rows later 
+mammals <- read_csv(mammals_file) %>% mutate(dataset =  "mammals", id = as.character(id))
+enzymes <- read_csv(enzymes_file) %>% mutate(dataset =  "enzymes", id = as.character(id))
+
+# Downsample for mini analysis only
+minify <- function(df) 
+{
+  df %>%
+    group_by(id) %>% 
+    nest() %>% #condense each id into its own tibble-like thing 
+    ungroup() %>%
+    slice(1:params$mini_n) %>% #this takes the first *however many* rows from the dataset. The *however many* is specified by the params$mini_n
+    unnest(cols = c(data))
+}
+
+if (params$mini == TRUE) #if we want to use the mini versions of the datasets, then use the mini function on each of them!!
+{
+  minify(birds) -> birds 
+  minify(enzymes) -> enzymes
+  minify(mammals) -> mammals
+}
+
+
+summarize_branch_lengths(birds) -> birds_bl #produce a bl dataframe for all three datasets 
+summarize_branch_lengths(mammals) -> mammals_bl 
+summarize_branch_lengths(enzymes) -> enzymes_bl
+
+bind_rows(mammals, enzymes, birds) -> full_data #this is just one big data frame consisting of the three datasets
+
+
+summarize_branch_lengths(full_data) -> summarized_bl #this data frame will have branch length summary statistics for enzymes, birds, and mammals
+```
+
+## The summarized branch lengths:
+
+```{r show_bl, echo=TRUE}
+print(summarized_bl) 
+```
+
+
+This dataset contains branch length summary statistics (columns) for a number of selected id's from the bird, mammal, and enzyme datasets. Moving forward, we will use this dataset to determine if these summary statistics differ across protein models (JTT, WAG, FLU, Poisson, and LG). 
+
+## Analysis of Branchlength Differences Between Models 
+Okay, now that we have our mini-dataset, let's begin to see how the branch length summary stats look! We will begin with some violin plots of treelength, max branch length, and mean branch length. Analysis of the results comes after the three plots. 
+
+```{r vizualize branch lengths violin, , fig.width=10, fig.height=6}
+#create violin plots for treelength, max_bl, and mean_bl
+Violin_bl_measurements(summarized_bl, treelength, "Treelength", "Estimated Treelengths for Selected Id's")
+Violin_bl_measurements(summarized_bl, mean_bl, "Mean_bl", "Estimated Mean Branchlengths for Selected Id's")
+Violin_bl_measurements(summarized_bl, max_bl, "Max_bl", "Estimated Maximum Branchlengths for Selected Id's")
+```
+
+<br><br>
+-From this, we first see that FLU *appears* to overestimate the branch length related measurements while Poisson underestimates.
+
+-These distributions appear to be bi-modal, likely due to the high divergence of the `enzymes` dataset. 
+
+-`enzymes` summary statistics are elevated compared to those of `birds` or `mammals`. Therefore, the points grouped towards the top of each violin are estimates from the `enzymes` dataset.
+
+-It is expected that `ASRV+` plots display more evolutionary change since sites are likely to mutate at different rates due do differing evolutionary pressures. 
+
+-Overall, this analysis suggests that it may be interesting to run the summary statistics without the enzyme data, to see how the models perform under lower-variance conditions. Maybe the overestimation by FLU and the underestimation by Poisson are due to the high variation alone, in which case we could approximate *how much* variance these models can "handle" before they are no longer reliable. 
+<br><br>
+
+### Now, Let's continue to address our goal, but this time by utilizing linear models to determine if branch length *summary statistics* do indeed differ across protein models. Specifically, we will look at mean branch length, treelength, and max branch length.
+
+-For our analysis, we will conduct (9) linear models for *each* summary statistic of interest (`mean_bl`, `treelength`, and `max_bl`). There will be only one "type one" linear model for each summary statistic since the this type of model relies on there being variation in the `dataset` variable, which is only found in the `summarized bl` dataset. There will then be four (4) type 2 and four (4) type three linear models carried out for *each* statistic (one each from `birds_bl`, `mammals_bl`, `enzymes_bl`, and `summarized_bl`). Overall, this leaves us with one type 1 model, four type 2 models, and four type 3 models for each summary stat of interest. Since we are concerned with three summary stats total, this leaves us with 27 linear models to analyze! 
+<br><br>
+
+# Model Types
+
++ **Type 1**: `summary stat ~ protein model + dataset + presence of ASRV` 
+  + birds, mammals, and enzymes are regarded as separate datasets
++ **Type 2**: `summary stat ~ protein model + presence of ASRV` 
+  + birds, mammals, enzymes are regarded as a single dataset
++ **Type 3**: `summary stat ~ protein model`
+  + birds, mammals, enzymes are regarded as a single dataset
+
+ 
+First, we will look at mean branch length as our branch length summary statistic of interest. A detailed analysis of the model outputs can be found after all plots and charts are shown. 
+
+## Mean Branch Length
+
+``` {r lm for mean bl summarized, echo=FALSE}
+#CAN NOT DO TYPE ONE ON THE MAMMALS, ENZYMES, OR BIRDS ALONE SINCE THERE IS NO VARIATION IN THE *DATASET* VARIABLE!!!
+
+#As explained above, there will be one type 1, four type 2, and four type 3 linear models run for the mean_bl summary statistic. Both a plot and chart will be visible for EACH lm performed. 
+bl_lm(summarized_bl, 
+      "type_1", 
+      summarized_bl$mean_bl,
+      "Type 1 lm Estimates of Mean BL") -> out1
+out1$Plot
+out1$Table
+
+bl_lm(summarized_bl, "type_2", summarized_bl$mean_bl,"Type 2 lm Estimates of Mean BL") -> out2
+out2$Plot
+out2$Table
+
+bl_lm(summarized_bl, "type_3", summarized_bl$mean_bl,"Type 3 lm Estimates of Mean BL")-> out3
+out3$Plot
+out3$Table
+```
+
+
+
+### Birds_bl mean_bl
+```{r lm for mean bl birds, echo=FALSE}
+bl_lm(birds_bl, "type_2", birds_bl$mean_bl, "Type 2 lm Estimates of Mean BL") -> out2
+out2$Plot
+out2$Table
+
+bl_lm(birds_bl, "type_3", birds_bl$mean_bl, "Type 3 lm Estimates of Mean BL") -> out
+out$Plot
+out$Table
+```
+
+
+### Mammals_bl mean_bl
+```{r,lm for mean bl mammals, echo=FALSE}
+bl_lm (mammals_bl, "type_2", mammals_bl$mean_bl, "Type 2 lm Estimates of Mean BL")-> out
+out$Plot
+out$Table
+bl_lm (mammals_bl, "type_3", mammals_bl$mean_bl,"Type 3 lm Estimates of Mean BL")-> out
+out$Plot
+out$Table
+```
+
+### Enzymes_bl mean_bl
+```{r lm for mean bl enzymes, echo=FALSE}
+bl_lm(enzymes_bl, "type_2", enzymes_bl$mean_bl,"Type 2 lm Estimates of Mean BL")-> out
+out$Plot
+out$Table
+bl_lm (enzymes_bl, "type_3", enzymes_bl$mean_bl, "Type 3 lm Estimates of Mean BL")-> out
+out$Plot
+out$Table
+```
+
+## Treelength
+Next, we will look at treelength as our branch length summary statistic of interest.
+
+### Summarized_bl Treelength
+```{r lm for treelength summarized , echo=FALSE}
+#CAN NOT DO TYPE ONE ON THE MAMMALS, ENZYMES, OR BIRDS ALONE SINCE THERE IS NO VARIATION IN THE *DATASET* VARIABLE!!!
+#As explained above, there will be one type 1, four type 2, and four type 3 linear models run for the treelength summary statistic.
+bl_lm(summarized_bl, "type_1", summarized_bl$treelength,"Type 1 lm Estimates of Treelength")-> out
+out$Plot
+out$Table
+bl_lm(summarized_bl, "type_2", summarized_bl$treelength, "Type 2 lm Estimates of Treelength")-> out
+out$Plot
+out$Table
+bl_lm(summarized_bl, "type_3", summarized_bl$treelength, "Type 3 lm Estimates of Treelength")-> out
+out$Plot
+out$Table
+```
+
+### Birds_bl Treelength
+```{r lm for treelength birds, echo=FALSE}
+bl_lm(birds_bl, "type_2", birds_bl$treelength,"Type 2 lm Estimates of Treelength")-> out
+out$Plot
+out$Table
+bl_lm(birds_bl, "type_3", birds_bl$treelength,"Type 3 lm Estimates of Treelength")-> out
+out$Plot
+out$Table
+```
+
+### Mammals_bl Treelength
+```{r lm for treelength mammals, echo=FALSE}
+bl_lm(mammals_bl, "type_2", mammals_bl$treelength,"Type 2 lm Estimates of Treelength")-> out
+out$Plot
+out$Table
+bl_lm(mammals_bl, "type_3", mammals_bl$treelength,"Type 3 lm Estimates of Treelength")-> out
+out$Plot
+out$Table
+```
+
+### Enzymes_bl Treelength
+```{r lm for treelength enzymes, echo=FALSE}
+bl_lm(enzymes_bl, "type_2", enzymes_bl$treelength,"Type 2 lm Estimates of Treelength")-> out
+out$Plot
+out$Table
+bl_lm(enzymes_bl, "type_3", enzymes_bl$treelength, "Type 3 lm Estimates of Treelength")-> out
+out$Plot
+out$Table
+```
+
+
+## Max Branch Length
+Finally, we will look at max branch length as our summary statistic of interest. 
+
+### Summarized_bl max_bl
+```{r lm for max_bl summarized, echo=FALSE}
+#CAN NOT DO TYPE ONE MODEL ON THE MAMMALS, ENZYMES, OR BIRDS ALONE SINCE THERE IS NO VARIATION IN THE *DATASET* VARIABLE!!!
+#As explained above, there will be one type 1, four type 2, and four type 3 linear models run for the treelength summary statistic, each with a chart and plot.
+bl_lm(summarized_bl, "type_1", summarized_bl$max_bl,"Type 1 lm Estimates of Max BL")-> out
+out$Plot
+out$Table
+bl_lm(summarized_bl, "type_2", summarized_bl$max_bl,"Type 2 lm Estimates of Max BL")-> out
+out$Plot
+out$Table
+bl_lm(summarized_bl, "type_3", summarized_bl$max_bl,"Type 3 lm Estimates of Max BL")-> out
+out$Plot
+out$Table
+```
+
+### Birds_bl max_bl
+```{r lm for max bl birds, echo=FALSE}
+bl_lm(birds_bl, "type_2", birds_bl$max_bl,"Type 2 lm Estimates of Max BL")-> out
+out$Plot
+out$Table
+bl_lm(birds_bl, "type_3", birds_bl$max_bl,"Type 3 lm Estimates of Max BL")-> out
+out$Plot
+out$Table
+```
+
+
+### Mammals_bl max_bl
+```{r lm for max bl mammals, echo=FALSE}
+bl_lm(mammals_bl, "type_2", mammals_bl$max_bl,"Type 2 lm Estimates of Max BL")-> out
+out$Plot
+out$Table
+bl_lm(mammals_bl, "type_3", mammals_bl$max_bl,"Type 3 lm Estimates of Max BL")-> out
+out$Plot
+out$Table
+```
+
+### Enzymes_bl max_bl
+``` {r lm for max bl enzymes, echo=FALSE}
+bl_lm(enzymes_bl, "type_2", enzymes_bl$max_bl, "Type 2 lm Estimates of Max BL")-> out
+out$Plot
+out$Table
+bl_lm(enzymes_bl, "type_3", enzymes_bl$max_bl,"Type 3 lm Estimates of Max BL")-> out
+out$Plot
+out$Table
+```
+
+<br><br>
+
+## What Did We Learn from all of that modeling?
+-Before we begin to analyze any of the linear models constructed above, it is vital to understand that these results were obtained from small *slices* of the full datasets.
+
+-Many of the significant findings occur when comparing Poisson to FLU, which is not surprising when considering our earlier results seen in the violin plots.
+
+-When focusing on model type, most of the significant findings occur when performing type 1 models, which have the most predictor variables of any model type (`model`, `dataset`, and `ASRV_modified` are all predictors).
+
+-When considering datasets, most of the significant findings occur within the enzymes dataset, which we know is the highest-divergence dataset of the three. This suggests that higher-divergence sequences lead to more exaggerated differences in the models' estimates of branch length summary statistics. 
+
+-Finally, when considering the summary statistics themselves, it appears that the models' estimates of max branch length (`max_bl`) actually displayed the most discrepancy. 
+
+-When taking this all in as a whole, the conditions that produced the least amount of agreement between models' estimates were max_bl estimates from the enzymes dataset. This information helps us understand what conditions cause the branch length summary statistics to differ between models.
+
