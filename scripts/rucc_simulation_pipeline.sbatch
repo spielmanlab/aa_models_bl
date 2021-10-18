@@ -10,10 +10,9 @@
 THREADS=5  ## see above: --ntasks-per-node
 
 TOPPATH=/csm_data/spielman_lab/aa_model_bl
-SIMPATH_SEQ=${TOPPATH}/length_1e4/simulations_sequences
-SIMPATH_COUNT=${TOPPATH}/length_1e4/simulations_counts
-BLPATH=${TOPPATH}/length_1e4/branch_length_inference
-RANDOM_MODEL_PATH=${TOPPATH}/random_protein_models
+SIMPATH_SEQ=${TOPPATH}/simulations_sequences
+SIMPATH_COUNT=${TOPPATH}/simulations_counts
+BLPATH=${TOPPATH}/branch_length_inference
 
 mkdir -p $SIMPATH_SEQ
 mkdir -p $SIMPATH_COUNT
@@ -29,7 +28,8 @@ PREFFILE=${TOPPATH}/preferences/NP_prefs.csv
 SIZE=10000
 
 
-for BL in 0.01 0.05 0.1 0.25 0.5 0.75 1.0 1.5 2.0 2.5 3.0; do
+for BL in 0.01 0.05 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0; do
+
     
     ## Define the output files that will come out of simulation: an AA alignment in FASTA (we don't need to save codon version) and a CSV of counts
     SIM_SEQ_OUTPUT=${SIMPATH_SEQ}/site${SITE}_bl${BL}.fasta 
@@ -49,47 +49,20 @@ for BL in 0.01 0.05 0.1 0.25 0.5 0.75 1.0 1.5 2.0 2.5 3.0; do
             FULLMODEL=${MODEL}${INV}${GAMMA}
             TREEFILE=${BLPATH}/site${SITE}_bl${BL}_${FULLMODEL}.treefile
             INFOFILE=${BLPATH}/site${SITE}_bl${BL}_${FULLMODEL}.iqtree
+            LOGLFILE=${BLPATH}/site${SITE}_bl${BL}_${MODELNAME}.sitelogl
         
             if [ ! -f ${TREEFILE} ]; then ## only run if not already run
                 iqtree -st AA -s ${SIM_SEQ_OUTPUT} -m ${FULLMODEL} -nt ${THREADS}
         
-                # keep files we need, renamed
+                # keep files we need renamed
                 mv ${SIM_SEQ_OUTPUT}.treefile $TREEFILE
                 mv ${SIM_SEQ_OUTPUT}.iqtree $INFOFILE
+                mv ${SIM_SEQ_OUTPUT}.sitelogl $LOGLFILE
           
                 # remove files we don't need
-                rm ${SIM_SEQ_OUTPUT}.ckp.gz
-                rm ${SIM_SEQ_OUTPUT}.log
-                rm ${SIM_SEQ_OUTPUT}.bionj
-                rm ${SIM_SEQ_OUTPUT}.mldist
+                rm ${SIM_SEQ_OUTPUT}.*
             fi
         done
     done
-
-
-
-    for M in {1..10}; do
-
-        MODELNAME=model${M}
-        MODELFILE=${RANDOM_MODEL_PATH}/${MODELNAME}.paml
-        TREEFILE=${BLPATH}/site${SITE}_bl${BL}_${MODELNAME}.treefile
-        INFOFILE=${BLPATH}/site${SITE}_bl${BL}_${MODELNAME}.iqtree
-
-        if [ ! -f ${TREEFILE} ]; then ## only run if not already run
-            iqtree -st AA -s ${SIM_SEQ_OUTPUT} -m ${MODELFILE} -nt ${THREADS}
-
-            # keep files we need, renamed
-            mv ${SIM_SEQ_OUTPUT}.treefile $TREEFILE
-            mv ${SIM_SEQ_OUTPUT}.iqtree $INFOFILE
-
-            # remove files we don't need
-            rm ${SIM_SEQ_OUTPUT}.bionj
-            rm ${SIM_SEQ_OUTPUT}.mldist
-            rm ${SIM_SEQ_OUTPUT}.ckp.gz
-            rm ${SIM_SEQ_OUTPUT}.log
-        fi
-    done
-
-
 done
 
