@@ -16,7 +16,6 @@ if dataset_type == "mammal":
     treefile = path_to_data + "mammal.tre"
 
    
-
 q_options = ["WAG", "JTT", "LG", "FLU", "Poisson"]
 g_options = ["+F", "+F+G"]
 
@@ -25,19 +24,19 @@ fastas = [x for x in os.listdir(path_to_data) if x.endswith(".fasta")]
 
 x=1
 for fasta in fastas:
-    print(x)
+    print(fasta, x)
     x+=1
     
     fasfile = path_to_data + fasta
     if dataset_type != "mammal":
         treefile = fasfile.replace(".fasta", ".tre")
-    if dataset_type == "bird" or dataset_type == "pandit":
+    if not os.path.exists(treefile):
+        #print("need to make", treefile)
         # Infer a quick fasttree. Does not need to be the best tree, just the SAME tree for all model bl optimizations
-        cmd = "FastTree -quiet -fastest -noml " + fasfile + " > " + treefile
+        cmd = "FastTree -quiet -fastest -noml -nosupport " + fasfile + " > " + treefile
+        #print(cmd)
         cmdcode = os.system(cmd)
-        if cmdcode != 0:
-            print("BAD FASTREE:", fasta)
-            continue
+        assert(cmdcode == 0), "BAD FASTREE"
     for matrix in q_options:
         for gamma in g_options:
             model = matrix + gamma
@@ -64,7 +63,7 @@ for fasta in fastas:
             # Move files to final resting place 
             os.system("mv " + fasfile + ".log " + final_log)
             os.system("mv " + fasfile + ".treefile " + final_tree)
-            os.system("rm " + fasfile + ".*")            
+            os.system("rm " + fasfile + ".*")           
             
             
             
