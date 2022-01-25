@@ -1,7 +1,7 @@
 ---
 title: "Practice Plots"
 subtitle: "1/22/2022"
-author: "Courtney Charlesworth"
+author: "Courtney Charlesworth and Stephanie Spielman"
 output: 
   html_document:
     theme: readable
@@ -12,11 +12,13 @@ editor_options:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
-library(dplyr)
+library(tidyverse) # no need to also load dplyr b/c dplyr is loaded with tidyverse
 
-data <- read_csv("copy_simulation_branch_lengths_counts.csv")
+# use reproducible paths
+path_to_data <- file.path(here::here(), "results", "simulation_branch_lengths_counts.csv")
 
+# avoid getting confused with poor use of "site" term all over the place
+data <- read_csv(path_to_data) %>% rename(np_sim_model = site)
 ```
 
 ## which model (WAG, Poisson, etc.) best predicts the number of substitutions/site (and in what conditions is one better than the other)
@@ -36,9 +38,9 @@ data <- read_csv("copy_simulation_branch_lengths_counts.csv")
 ## Variables
 simulation
 
-+ `count` = total number of amino acid changes in the simulation   
-+ `site` = #1-498 flu nucleoprotein (category)
-+ `sim_branch_length` = total amount of branch length
++ `count` = total number of amino acid changes in the simulation.   
++ `site` = #1-498 flu nucleoprotein (category). "Which simulation model was used."
++ `sim_branch_length` = total amount of branch length provided to simulator. "Which simulation branch length"
 + `persite_count` = count/10,000 = truth (how many substitutions)
 
 model
@@ -49,7 +51,11 @@ model
 
 <br>
 
+
+
 ### Plot 1
+
+> Not a plot for the shiny app 
 
 ```{r plot1}
 #sim_branch_length vs.branch_length; bl vs. bl
@@ -57,9 +63,13 @@ data %>%
   ggplot() +
   aes(x = branch_length, #range = 0-30 
       y = sim_branch_length) + #range = 0-3, these numbers don't look random
-  geom_point()
+  geom_point() + 
+  geom_abline(color = "red")
 
 ```
+
+
+Each individual simulation has a total tree length of X (where X = `sim_branch_length`) where $X \in {0.01, 0.05, seq(0.1, 3, 0.1)}$
 
 <br>
 
@@ -69,9 +79,17 @@ data %>%
 #truth vs. inferred (persite_count vs. branch_length)
 data %>%
   ggplot() +
-  aes(x = branch_length, #inferred
-      y = persite_count) + #truth (0.01 - 3.00); after 3.00, it's a new site and starts back at 0.01
-  geom_point(alpha = 0.5)
+  aes(y = branch_length, #inferred
+      x = persite_count) + #truth (0.01 - 3.00); after 3.00, it's a new site and starts back at 0.01
+  geom_point(alpha = 0.5)+ 
+  geom_abline(color = "red", size = 1) +
+  labs(x = "(TRUTH) amino acid changes per site IN SIMULATION", 
+       y = "(INFERRED) MODEL GUESSES amino acid changes per site") + 
+  # Zoom into only simulations with very FEW changes
+  lims(x = c(0, 0.1), y = c(0, 0.1)) + 
+  # Highlight different results across difference INFERENCE conditions
+  facet_grid(rows = vars(model),
+             cols = vars(ASRV))
 
 ```
 
@@ -203,8 +221,10 @@ different distributions
 
 ## Questions
 
-+ Is `sim_branch_length` given to the simulation? and then output is count?
-+ `sim_branch_length` can be stated as every site has had _____ changes on average?
++ Is `sim_branch_length` given to the simulation? and then output is count? SJS: YES!!
++ `sim_branch_length` can be stated as every site has had _____ changes on average? yes...every site has had ___ NEUTRAL CODON changes on average. This is something you don't want to care about. 
+
++ `sim_branch_length` is *proportional* to the amount of evolutionary change in the given simulation. 
 
 
 + `persite_count` = count/10,000 or 1e4 sites. where is 10,000 coming from?
@@ -213,6 +233,22 @@ different distributions
 
 
 + why would +G make the branch_length longer?
-+
 
 
+
+## Paired programming plots
+
+This plot should be in the shiny app with user ability to change the site (AKA NP MODEL - YOU MAY NEED TO DEBUG THIS CODE!)
+```{r paired1}
+data %>%
+  filter(site == 3) %>% # Users can change the "site" (NP)
+  ggplot() + 
+  aes(x = persite_count, 
+      y = branch_length) + 
+  geom_point() +
+    facet_grid(cols = vars(model),
+             rows = vars(ASRV)) + 
+  geom_abline(color = "red")  + # equality
+  geom_smooth(method = "lm", color = "blue", size = 0.5)
+```
+Each point is a simulation. Each panel is how that simulation was MEASURED under different modeling circumstances.
