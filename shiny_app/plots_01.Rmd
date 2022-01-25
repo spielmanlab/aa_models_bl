@@ -1,0 +1,218 @@
+---
+title: "Practice Plots"
+subtitle: "1/22/2022"
+author: "Courtney Charlesworth"
+output: 
+  html_document:
+    theme: readable
+    highlight: pygments
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+
+data <- read_csv("copy_simulation_branch_lengths_counts.csv")
+
+```
+
+## which model (WAG, Poisson, etc.) best predicts the number of substitutions/site (and in what conditions is one better than the other)
+
+<br>
+
++ substitutions = insertion/deletion events = mutations
++ substitutions/site = branch length
+
++ branch length = the output of the exp 
+
++ truth = simulation = `persite_count`
++ inferred = what the model (WAG, Poisson, etc.) thinks sub/site was  = `branch_length`
+
+<br>
+
+## Variables
+simulation
+
++ `count` = total number of amino acid changes in the simulation   
++ `site` = #1-498 flu nucleoprotein (category)
++ `sim_branch_length` = total amount of branch length
++ `persite_count` = count/10,000 = truth (how many substitutions)
+
+model
+
++ `model` = the substitution models (FLU, WAG, JTT, LG, Poisson = equal)
++ `branch_length` = how many substitutions the models think happened     
++ `ASRV` = gamma distribution (yes or no) = rate variation/heterogeneity 
+
+<br>
+
+### Plot 1
+
+```{r plot1}
+#sim_branch_length vs.branch_length; bl vs. bl
+data %>%
+  ggplot() +
+  aes(x = branch_length, #range = 0-30 
+      y = sim_branch_length) + #range = 0-3, these numbers don't look random
+  geom_point()
+
+```
+
+<br>
+
+### Plot 2
+
+```{r plot2}
+#truth vs. inferred (persite_count vs. branch_length)
+data %>%
+  ggplot() +
+  aes(x = branch_length, #inferred
+      y = persite_count) + #truth (0.01 - 3.00); after 3.00, it's a new site and starts back at 0.01
+  geom_point(alpha = 0.5)
+
+```
+
+count (number of substitutions) increases as branch length (sim_branch_length) increases
+
+longer branch lengths = more simulations can be run 
+
+<br>
+
+### Plot 3
+
+```{r plot3}
+#truth vs. inferred (persite_count vs. branch_length) per model
+#same plot as above but faceted by model
+data %>%
+  ggplot() +
+  aes(x = branch_length, #inferred
+      y = persite_count) + #truth
+  geom_point(alpha = 0.5) +
+  facet_wrap(vars(model),
+             scales = "free")
+
+```
+
+Poisson has shortest branch_length values
+
+makes sense because it assumes everything is equal
+
+<br>
+
+### Plot 4
+```{r plot4A}
+#bar plot of branch length faceted by model, comparing ASRV
+data %>%
+  filter(site == 1,
+         sim_branch_length == 1.40) %>%
+  print() %>%
+    ggplot() +
+      aes(x = ASRV,
+          y = branch_length, #inferred
+          fill = ASRV) + 
+      geom_col() +
+      facet_wrap(vars(model))
+
+```
+
+
+```{r plot4B}
+#same as above; different part in the data
+data %>%
+  filter(site == 290,
+         sim_branch_length == 2.30) %>%
+  print() %>%
+    ggplot() +
+      aes(x = ASRV,
+          y = branch_length, #inferred
+          fill = ASRV) + 
+      geom_col() +
+      facet_wrap(vars(model))
+
+```
+
++G seems like it tends to be a little higher
+
+largest differences seem to be in FLU and LG, smaller differences in JTT and WAG, Poisson the same for both
+
+```{r plot4C}
+#mean branch length for each model/ASRV combination
+data %>%
+  group_by(model, ASRV) %>%
+  summarize(mean_branch_length = mean(branch_length)) %>%
+  print() %>%
+    ggplot() +
+      aes(x = ASRV,
+        y = mean_branch_length, #inferred
+        fill = ASRV) + 
+        geom_col() +
+        facet_wrap(vars(model))
+
+```
+
++G tends to be a little higher
+
+largest differences seem to be in FLU and LG, smaller differences in WAG then JTT, Poisson still basically the same
+
+<br>
+
+### Plot 5
+```{r plot5}
+#total branch length vs. # of substitutions
+data %>%
+  ggplot() +
+  aes(x = persite_count, #truth
+      y = sim_branch_length) + 
+  geom_point(alpha = 0.5)
+
+```
+
+positive relationship
+
+### Plot 6
+```{r plot6A}
+#density plot of truth column
+data %>%
+  ggplot() +
+  aes(x = persite_count, #truth
+      fill = model) +
+  geom_density() +
+  facet_wrap(vars(model))
+
+```
+
+everything looks the same (expected, can see that the numbers are the same for each model)
+
+```{r plot6B}
+#density plot of inferred column
+data %>%
+  ggplot() +
+  aes(x = branch_length, #inferred
+      fill = model) + 
+  geom_density() +
+  facet_wrap(vars(model),
+             scales = "free") 
+
+```
+
+different distributions
+
+
+## Questions
+
++ Is `sim_branch_length` given to the simulation? and then output is count?
++ `sim_branch_length` can be stated as every site has had _____ changes on average?
+
+
++ `persite_count` = count/10,000 or 1e4 sites. where is 10,000 coming from?
++ "Each individual simulation uses a single site parameterization from NP and 1e4 sites. Total of 498 sites"
++ i think the usage of sites in maybe 2-3 contexts is confusing me
+
+
++ why would +G make the branch_length longer?
++
+
+
