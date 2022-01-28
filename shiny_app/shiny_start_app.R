@@ -14,6 +14,7 @@ data <- read_csv(path_to_data) %>% rename(np_sim_model = site)
 #will write together
 np_model_function <- c(1, 10, 100, 104)
 
+#table to have something for tab subsection
 filler_table <- c("hello", "shiny", "world", "!!!!!!!!!!!!!")
 
 #1. builds the ui, the web document (like the drop down menus) --------------------
