@@ -24,6 +24,8 @@ ui <- dashboardPage(
   dashboardHeader(title = "Shiny app"),
   #sets up the sidebar -----------------------------------------
   dashboardSidebar(
+    sidebarMenu( #makes sidebar work
+    width = 200, #changes width of sidebar
     #this function is for each thing that will be in the sidebar
     menuItem("Tab 1", #name in the sidebar
              tabName = "tab_01"), #this needs to be the same as tabName further down
@@ -31,7 +33,8 @@ ui <- dashboardPage(
              tabName = "tab_02",
              menuSubItem("Subsection 1", #adds a submenu within that menu
                          tabName = "sub_01"))
-  ), #dashboardSidebar() closes
+      ) #sidebarMenu() 
+    ), #dashboardSidebar() 
   #where the plots, tables, etc will go -------------------------
   dashboardBody(
     #designates what should go in what tab
@@ -54,18 +57,19 @@ ui <- dashboardPage(
                          label = "Select nucleoprotein model",
                          choices = np_model_function,
                          inline = TRUE)) #makes the buttons inline
-        ) #fluidRow() closes
-      ), #tabItem() closes
+        ) #fluidRow() 
+      ), #tabItem() 
       #Subsection 1 table
       tabItem(tabName = "sub_01", #tab id (defined above)
               h3("Tab 2 content"), #header level, h1, h2, etc.
               fluidRow(
-                box(tableOutput("table"))) #fluidRow() closes
+                box(tableOutput("table"))
+                ) #fluidRow() 
               
-      ) #tabItem() closes
-    ) #tabItems() closes
-  ) #dashboardBody() closes
-) #dashboardPage() closes
+      ) #tabItem() 
+    ) #tabItems() 
+  ) #dashboardBody() 
+) #dashboardPage() 
 
 #2. functions to make the plot, table ----------------------------------------------------
 server <- function(input, output) {
@@ -80,7 +84,7 @@ server <- function(input, output) {
                  rows = vars(ASRV)) + 
       geom_abline(color = "red")  + # equality
       geom_smooth(method = "lm", color = "blue", size = 0.5)
-  ) #renderPlot() closes
+    ) #renderPlot() 
   
   output$table <- renderTable(
     filler_table
