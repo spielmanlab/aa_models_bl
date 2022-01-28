@@ -86,6 +86,7 @@ server <- function(input, output) {
       geom_smooth(method = "lm", color = "blue", size = 0.5)
     ) #renderPlot() 
   
+  #not separated by commas
   output$table <- renderTable(
     filler_table
   )
