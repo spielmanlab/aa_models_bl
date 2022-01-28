@@ -81,3 +81,55 @@ f3_filter <- function(keep_species) {
 
 f3_filter("setosa")
 
+
+
+######## More notes with Spielman, 1/28 ####################
+
+
+#input$line_of_best_fit "Yes" "No"
+
+iris %>%
+  ggplot() + 
+  aes(x = Sepal.Length, y = Petal.Length) +
+  geom_point() -> my_plot
+
+# MAYBE???
+my_plot +
+  geom_smooth(method = "lm") -> my_plot
+
+# and then plot my_plot
+
+
+
+
+
+
+x <- 6
+if (x == 7) {
+  print("it equals 7")
+} else {
+  print("it does not equal 7")
+}
+
+
+
+# step 1: make plot without extras
+iris %>%
+  ggplot() + 
+  aes(x = Sepal.Length, y = Petal.Length) +
+  geom_point() -> my_plot
+
+# step 2: add on extras if they asked for the extras
+# an if statement that, if TRUE, **redefines my_plot**
+
+# step 3: plot whatever the final plot is 
+
+
+
+
+
+
+
+
+
+
