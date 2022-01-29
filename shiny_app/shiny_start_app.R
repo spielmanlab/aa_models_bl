@@ -47,17 +47,17 @@ ui <- dashboardPage(
         h3("Tab 1 content"), #header level, h1, h2, etc.
         #Boxes need to be put in a row (or column)
         fluidRow(
-          #add boxes for each thing
-          box(plotOutput("plot", 
-                         #how long the plot is?
-                         height = 300)),
+          #add boxes for each thing, order of boxes is order in app
           box(
             #title = "title?",
             #from shinyWidgets, replaces radioButtons
             awesomeRadio(inputId = "np_model",
                          label = "Select nucleoprotein model",
                          choices = np_model_function,
-                         inline = TRUE)) #makes the buttons inline
+                         inline = TRUE)), #makes the buttons inline
+          box(plotOutput("plot", 
+                         #how long the plot is?
+                         height = 300))
         ) #fluidRow() 
       ), #tabItem() 
       #Subsection 1 table
