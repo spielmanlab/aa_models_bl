@@ -7,10 +7,12 @@ library(colourpicker)
 
 #file path to data
 path_to_data <- file.path(here::here(), "results", "simulation_branch_lengths_counts.csv")
+path_to_info <- file.path(here::here(), "results", "np_site_dnds_entropy.csv")
 
 #read in data
 #avoid getting confused with poor use of "site" term all over the place
 data <- read_csv(path_to_data) %>% rename(np_sim_model = site)
+info <- read_csv(path_to_info) %>% rename(np_sim_model = site)
 
 #table to have something for tab subsection
 filler_table <- c("hello", "shiny", "world", "!!!!!!!!!!!!!")
@@ -59,23 +61,25 @@ ui <- dashboardPage(
                           label = "Select line of best fit color", 
                           "purple")), 
             box(numericInput(inputId = "np_model", 
-                             label = "Pick nucleoprotein model",
+                             label = "Select nucleoprotein model",
                              value = 1,
                              min = 1,
                              max = 498),
-                width = NULL)), #column()
-            column(width = 7,
-              box(plotOutput("plot", 
-                           #how long the plot is?
-                           height = 300),
-                  width = NULL)) #column()
+                width = NULL,
+                tableOutput(outputId = "table")),
+            ), #column()
+          column(width = 7,
+            box(plotOutput(outputId = "plot", 
+                            #how long the plot is?
+                            height = 300),
+                width = NULL)) #column()
         ) #fluidRow() 
       ), #tabItem() 
       #Subsection 1 table
       tabItem(tabName = "sub_01", #tab id (defined above)
               h3("Tab 2 content"), #header level, h1, h2, etc.
               fluidRow(
-                box(tableOutput("table"))
+                box(tableOutput(outputId = "filler"))
               ) #fluidRow() 
               
       ) #tabItem() 
@@ -122,8 +126,18 @@ server <- function(input, output) {
         theme_bw()
     }
   ) #renderPlot() 
+  
   #not separated by commas
   output$table <- renderTable(
+    info %>%
+      filter(np_sim_model == input$np_model) %>%
+      #round to 3 decimal places
+      mutate(dnds = round(dnds, 3), #app is showing only 2?
+             entropy = round(entropy, 3)) %>%
+      select(-np_sim_model)
+  )
+  
+  output$filler <- renderTable(
     filler_table
   )
 }
