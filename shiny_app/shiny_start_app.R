@@ -3,6 +3,7 @@ library(shiny)
 library(tidyverse)
 library(shinydashboard)
 library(shinyWidgets)
+library(colourpicker)
 
 #file path to data
 path_to_data <- file.path(here::here(), "results", "simulation_branch_lengths_counts.csv")
@@ -10,9 +11,6 @@ path_to_data <- file.path(here::here(), "results", "simulation_branch_lengths_co
 #read in data
 #avoid getting confused with poor use of "site" term all over the place
 data <- read_csv(path_to_data) %>% rename(np_sim_model = site)
-
-#will write together
-np_model_function <- c(1, 10, 100, 104)
 
 #table to have something for tab subsection
 filler_table <- c("hello", "shiny", "world", "!!!!!!!!!!!!!")
@@ -26,16 +24,16 @@ ui <- dashboardPage(
   #sets up the sidebar -----------------------------------------
   dashboardSidebar(
     sidebarMenu( #makes sidebar work
-    width = 200, #changes width of sidebar
-    #this function is for each thing that will be in the sidebar
-    menuItem("Tab 1", #name in the sidebar
-             tabName = "tab_01"), #this needs to be the same as tabName further down
-    menuItem("Tab 2", 
-             tabName = "tab_02",
-             menuSubItem("Subsection 1", #adds a submenu within that menu
-                         tabName = "sub_01"))
-      ) #sidebarMenu() 
-    ), #dashboardSidebar() 
+      width = 200, #changes width of sidebar
+      #this function is for each thing that will be in the sidebar
+      menuItem("Tab 1", #name in the sidebar
+               tabName = "tab_01"), #this needs to be the same as tabName further down
+      menuItem("Tab 2", 
+               tabName = "tab_02",
+               menuSubItem("Subsection 1", #adds a submenu within that menu
+                           tabName = "sub_01"))
+    ) #sidebarMenu() 
+  ), #dashboardSidebar() 
   #where the plots, tables, etc will go -------------------------
   dashboardBody(
     #designates what should go in what tab
@@ -48,16 +46,29 @@ ui <- dashboardPage(
         #Boxes need to be put in a row (or column)
         fluidRow(
           #add boxes for each thing, order of boxes is order in app
-          box(
-            #title = "title?",
-            #from shinyWidgets, replaces radioButtons
-            awesomeRadio(inputId = "np_model",
-                         label = "Select nucleoprotein model",
-                         choices = np_model_function,
-                         inline = TRUE)), #makes the buttons inline
-          box(plotOutput("plot", 
-                         #how long the plot is?
-                         height = 300))
+          column(width = 2,
+            box(
+              #title = "title?",
+              #from shinyWidgets, replaces radioButtons
+              awesomeRadio(inputId = "line_of_best_fit",
+                           label = "Show line of best fit?",
+                           choices = c("Yes", "No"),
+                           inline = TRUE), #makes the buttons inline
+              width = NULL, #argument needed for column() to work (needs to be in each box)
+              colourInput(inputId = "line_bf_color", 
+                          label = "Select line of best fit color", 
+                          "purple")), 
+            box(numericInput(inputId = "np_model", 
+                             label = "Pick nucleoprotein model",
+                             value = 1,
+                             min = 1,
+                             max = 498),
+                width = NULL)), #column()
+            column(width = 7,
+              box(plotOutput("plot", 
+                           #how long the plot is?
+                           height = 300),
+                  width = NULL)) #column()
         ) #fluidRow() 
       ), #tabItem() 
       #Subsection 1 table
@@ -65,7 +76,7 @@ ui <- dashboardPage(
               h3("Tab 2 content"), #header level, h1, h2, etc.
               fluidRow(
                 box(tableOutput("table"))
-                ) #fluidRow() 
+              ) #fluidRow() 
               
       ) #tabItem() 
     ) #tabItems() 
@@ -75,18 +86,42 @@ ui <- dashboardPage(
 #2. functions to make the plot, table ----------------------------------------------------
 server <- function(input, output) {
   output$plot <- renderPlot(
-    data %>%
-      filter(np_sim_model == input$np_model) %>%
-      ggplot() + 
-      aes(x = persite_count, 
-          y = branch_length) + 
-      geom_point() +
-      facet_grid(cols = vars(model),
-                 rows = vars(ASRV)) + 
-      geom_abline(color = "red")  + # equality
-      geom_smooth(method = "lm", color = "blue", size = 0.5)
-    ) #renderPlot() 
-  
+    if (input$line_of_best_fit == "No") {
+      data %>%
+        filter(np_sim_model == input$np_model) %>%
+        ggplot() + 
+        aes(x = persite_count, 
+            y = branch_length) + 
+        geom_point() +
+        facet_grid(cols = vars(model),
+                   rows = vars(ASRV)) + 
+        # equality
+        geom_abline(color = "red") +
+        theme_bw()
+    } else { #curlys need to be in same line of code
+    #not clean, plot is not printing "Yes" (above),
+      #plot +
+      #geom_smooth(method = "lm", 
+      #color = "blue", 
+      #size = 0.5) 
+      #theme_classic()
+      
+      data %>%
+        filter(np_sim_model == input$np_model) %>% 
+        ggplot() + 
+        aes(x = persite_count, 
+            y = branch_length) + 
+        geom_point() +
+        facet_grid(cols = vars(model),
+                   rows = vars(ASRV)) + 
+        # equality
+        geom_abline(color = "red")+
+        geom_smooth(method = "lm", 
+                    color = input$line_bf_color, 
+                    size = 0.5) +
+        theme_bw()
+    }
+  ) #renderPlot() 
   #not separated by commas
   output$table <- renderTable(
     filler_table
