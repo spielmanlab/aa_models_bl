@@ -1,21 +1,16 @@
 #load libraries
 library(shiny)
 library(tidyverse)
+library(magrittr)
 library(shinydashboard)
 library(shinyWidgets)
 library(colourpicker)
 
-#file path to data
-path_to_data <- file.path(here::here(), "results", "simulation_branch_lengths_counts.csv")
-path_to_info <- file.path(here::here(), "results", "np_site_dnds_entropy.csv")
 
-#read in data
-#avoid getting confused with poor use of "site" term all over the place
-data <- read_csv(path_to_data) %>% rename(np_sim_model = site)
-info <- read_csv(path_to_info) %>% rename(np_sim_model = site)
+## Prepare data for the app --------------------------------------
+source("prepare_data.R")
 
-#table to have something for tab subsection
-filler_table <- c("hello", "shiny", "world", "!!!!!!!!!!!!!")
+
 
 #1. builds the ui, the web document (like the drop down menus) --------------------
 #dashboardPage instead of fluidPage
@@ -48,13 +43,13 @@ ui <- dashboardPage(
         #Boxes need to be put in a row (or column)
         fluidRow(
           #add boxes for each thing, order of boxes is order in app
-          column(width = 2,
+          column(width = 3,
             box(
               #title = "title?",
               #from shinyWidgets, replaces radioButtons
               awesomeRadio(inputId = "line_of_best_fit",
                            label = "Show line of best fit?",
-                           choices = c("Yes", "No"),
+                           choices = choices_line_of_best_fit,
                            inline = TRUE), #makes the buttons inline
               width = NULL, #argument needed for column() to work (needs to be in each box)
               colourInput(inputId = "line_bf_color", 
@@ -76,6 +71,7 @@ ui <- dashboardPage(
         ) #fluidRow() 
       ), #tabItem() 
       #Subsection 1 table
+      # tabName sub_01 ----------------------
       tabItem(tabName = "sub_01", #tab id (defined above)
               h3("Tab 2 content"), #header level, h1, h2, etc.
               fluidRow(
@@ -89,57 +85,41 @@ ui <- dashboardPage(
 
 #2. functions to make the plot, table ----------------------------------------------------
 server <- function(input, output) {
-  output$plot <- renderPlot(
-    if (input$line_of_best_fit == "No") {
-      data %>%
-        filter(np_sim_model == input$np_model) %>%
-        ggplot() + 
-        aes(x = persite_count, 
-            y = branch_length) + 
-        geom_point() +
-        facet_grid(cols = vars(model),
-                   rows = vars(ASRV)) + 
-        # equality
-        geom_abline(color = "red") +
-        theme_bw()
-    } else { #curlys need to be in same line of code
-    #not clean, plot is not printing "Yes" (above),
-      #plot +
-      #geom_smooth(method = "lm", 
-      #color = "blue", 
-      #size = 0.5) 
-      #theme_classic()
+  
+  # renderPlot: simulation scatterplot ----------------------
+  output$plot <- renderPlot({
+    data %>%
+      filter(np_sim_model == input$np_model) %>%
+      ggplot() + 
+      aes(x = persite_count, 
+          y = branch_length) + 
+      geom_point() +
+      facet_grid(cols = vars(model),
+                 rows = vars(ASRV)) + 
+      geom_abline(color = "red") +
+      theme_bw() -> plot
+    
+    if (input$line_of_best_fit == yes_string) {
       
-      data %>%
-        filter(np_sim_model == input$np_model) %>% 
-        ggplot() + 
-        aes(x = persite_count, 
-            y = branch_length) + 
-        geom_point() +
-        facet_grid(cols = vars(model),
-                   rows = vars(ASRV)) + 
-        # equality
-        geom_abline(color = "red")+
+      plot <- plot + 
         geom_smooth(method = "lm", 
                     color = input$line_bf_color, 
-                    size = 0.5) +
-        theme_bw()
+                    size = 0.5)
     }
-  ) #renderPlot() 
+    plot # return the final plot
+  }) #renderPlot() 
   
   #not separated by commas
-  output$table <- renderTable(
+  output$table <- renderTable({
     info %>%
       filter(np_sim_model == input$np_model) %>%
-      #round to 3 decimal places
-      mutate(dnds = round(dnds, 3), #app is showing only 2?
-             entropy = round(entropy, 3)) %>%
-      select(-np_sim_model)
+      select(-np_sim_model) 
+  }, digits = 3
   )
   
-  output$filler <- renderTable(
+  output$filler <- renderTable({
     filler_table
-  )
+  })
 }
 
 #3. knits ui and server together --------------------------------------------------
