@@ -10,8 +10,6 @@ library(colourpicker)
 ## Prepare data for the app --------------------------------------
 source("prepare_data.R")
 
-
-
 #1. builds the ui, the web document (like the drop down menus) --------------------
 #dashboardPage instead of fluidPage
 #from shinydashboard
@@ -44,6 +42,13 @@ ui <- dashboardPage(
         fluidRow(
           #add boxes for each thing, order of boxes is order in app
           column(width = 3,
+            box(numericInput(inputId = "np_model", 
+                              label = "Select nucleoprotein model",
+                              value = 1,
+                              min = min_np_model,
+                              max = max_np_model),
+                  width = NULL,
+                  tableOutput(outputId = "de_np_value_table")),
             box(
               #title = "title?",
               #from shinyWidgets, replaces radioButtons
@@ -54,17 +59,10 @@ ui <- dashboardPage(
               width = NULL, #argument needed for column() to work (needs to be in each box)
               colourInput(inputId = "line_bf_color", 
                           label = "Select line of best fit color", 
-                          "purple")), 
-            box(numericInput(inputId = "np_model", 
-                             label = "Select nucleoprotein model",
-                             value = 1,
-                             min = 1,
-                             max = 498),
-                width = NULL,
-                tableOutput(outputId = "table")),
+                          "purple"))
             ), #column()
           column(width = 7,
-            box(plotOutput(outputId = "plot", 
+            box(plotOutput(outputId = "sim_scatter", 
                             #how long the plot is?
                             height = 300),
                 width = NULL)) #column()
@@ -87,8 +85,8 @@ ui <- dashboardPage(
 server <- function(input, output) {
   
   # renderPlot: simulation scatterplot ----------------------
-  output$plot <- renderPlot({
-    data %>%
+  output$sim_scatter <- renderPlot({
+    sbl_data %>%
       filter(np_sim_model == input$np_model) %>%
       ggplot() + 
       aes(x = persite_count, 
@@ -110,8 +108,10 @@ server <- function(input, output) {
   }) #renderPlot() 
   
   #not separated by commas
-  output$table <- renderTable({
-    info %>%
+  
+  #renderTable: dnds, entropy values of simulation scatterplot (by np model) --------
+  output$de_np_value_table <- renderTable({
+    de_data %>%
       filter(np_sim_model == input$np_model) %>%
       select(-np_sim_model) 
   }, digits = 3
