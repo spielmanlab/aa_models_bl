@@ -1,0 +1,135 @@
+---
+title: "Practice Plots"
+subtitle: "2/2/2022"
+author: "Courtney Charlesworth and Stephanie Spielman"
+output: 
+  html_document:
+    theme: readable
+    highlight: pygments
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+#path to data file
+path_to_bs <- file.path(here::here(), "results", "simulation_bias_slope.csv")
+
+#read data file
+bs_data <-read_csv(path_to_bs) %>% 
+  select(-slope_p_value, -bias_p_value) %>% 
+  rename(np_sim_model = site)
+
+```
+
+### Variables
+
+<br>
+
++ `np_sim_model` = nucleoprotein simulation model
+
++ `ASRV` = gamma distribution (yes or no) = rate variation/heterogeneity
+
++ `model` = the substitution models (FLU, WAG, JTT, LG, Poisson = equal)
+
++ `slope_when_yint0` = make y int = 0, what is slope value? 1 = :D, <1 less than :D, >1 greater than :D
+
++ `slope_p_value_corrected` = indicates: is the slope inferred significantly different from the null? 
+
++ `bias` = if fix slope to 1 (true, expected relationship) what is the y int? pos = higher, neg = inference lower than it should be
+
++ `bias_p_value_corrected` = indicates: is bias significantly different from 0?
+
+<br>
+
+### Plot 1
+```{r plot1}
+#scatterplot of bias vs slope_when_yint0
+bs_data %>%
+  ggplot() +
+  aes(x = slope_when_yint0,
+      y = bias) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm",
+              color = "red",
+              size = 0.5)
+
+```
+
+positive relationship
+
+<br>
+
+### Plot 2
+```{r plot2}
+#scatterplot of bias vs slope_when_yint0 faceted by model and ASRV
+bs_data %>%
+  ggplot() +
+  aes(x = slope_when_yint0,
+      y = bias) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm",
+              color = "red",
+              size = 0.5) +
+  facet_grid(cols = vars(model),
+             rows = vars(ASRV),
+             scales = "free")
+
+```
+
+interesting differences between the models
+
+<br>
+
+### Plot 3
+```{r plot3a}
+#density bias
+bs_data %>%
+  ggplot() +
+  aes(x = bias) +
+  geom_density(fill = "red") 
+
+```
+
+
+```{r plot3b}
+#density bias_p_value_corrected
+bs_data %>%
+  ggplot() +
+  aes(x = bias_p_value_corrected) +
+  geom_density(fill = "red")
+
+```
+
+<br>
+
+### Plot 4
+```{r plot4a}
+#density slope_when_yint0
+bs_data %>%
+  ggplot() +
+  aes(x = slope_when_yint0) +
+  geom_density(fill = "red")
+
+```
+
+```{r plot4b}
+#slope_p_value_corrected
+bs_data %>%
+  ggplot() +
+  aes(x = slope_p_value_corrected) +
+  geom_density(fill = "red")
+
+```
+
+<br>
+
+### Plot 5
+```{r plot5}
+
+
+```
+
+

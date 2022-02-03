@@ -35,7 +35,7 @@ ui <- dashboardPage(
     tabItems(
       #Tab 1 plot and buttons
       tabItem(
-        # "Tab 1", #more text
+        # Tab 1 --------------------------------------------------------
         tabName = "tab_01", #tab id (defined above)
         h3("Tab 1 content"), #header level, h1, h2, etc.
         #Boxes need to be put in a row (or column)
@@ -69,7 +69,7 @@ ui <- dashboardPage(
         ) #fluidRow() 
       ), #tabItem() 
       #Subsection 1 table
-      # tabName sub_01 ----------------------
+      # tabName sub_01 ----------------------------------------------
       tabItem(tabName = "sub_01", #tab id (defined above)
               h3("Tab 2 content"), #header level, h1, h2, etc.
               fluidRow(
@@ -86,7 +86,7 @@ server <- function(input, output) {
   
   # renderPlot: simulation scatterplot ----------------------
   output$sim_scatter <- renderPlot({
-    sbl_data %>%
+    sbl_de_bs_data %>%
       filter(np_sim_model == input$np_model) %>%
       ggplot() + 
       aes(x = persite_count, 
@@ -95,25 +95,26 @@ server <- function(input, output) {
       facet_grid(cols = vars(model),
                  rows = vars(ASRV)) + 
       geom_abline(color = "red") +
-      theme_bw() -> plot
+      theme_bw() -> sim_plot
     
     if (input$line_of_best_fit == yes_string) {
       
-      plot <- plot + 
+      sim_plot <- sim_plot + 
         geom_smooth(method = "lm", 
                     color = input$line_bf_color, 
                     size = 0.5)
     }
-    plot # return the final plot
+    sim_plot # return the final plot
   }) #renderPlot() 
   
   #not separated by commas
   
   #renderTable: dnds, entropy values of simulation scatterplot (by np model) --------
   output$de_np_value_table <- renderTable({
-    de_data %>%
+    sbl_de_bs_data %>%
       filter(np_sim_model == input$np_model) %>%
-      select(-np_sim_model) 
+      select(dnds, entropy) %>%
+      distinct() #value kept repeating?
   }, digits = 3
   )
   
