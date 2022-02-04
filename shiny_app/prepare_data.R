@@ -18,15 +18,12 @@ sbl_de_bs_data <- sbl_data %>%
   #avoid getting confused with poor use of "site" term all over the place
   rename(np_sim_model = site) %>%
   mutate(model = factor(model, levels = c("FLU", "LG", "JTT", "WAG", "Poisson")))
-  
-
-#table to have something for tab subsection
-filler_table <- c("hello", "shiny", "world", "!!!!!!!!!!!!!")
-
 
 # UI Variables ----------------------------------
+min_np_model <- 1
+max_np_model <- 498
 yes_string <- "Yes"
 no_string <- "No"
 choices_line_of_best_fit <- c(yes_string, no_string)
-max_np_model <- 498
-min_np_model <- 1
+choices_de <- names(sbl_de_bs_data)[names(sbl_de_bs_data) %in% c("dnds", "entropy")]
+choices_bs <- names(sbl_de_bs_data)[names(sbl_de_bs_data) %in% c("bias", "slope_when_yint0")]

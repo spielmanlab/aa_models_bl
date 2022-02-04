@@ -58,7 +58,7 @@ bs_data %>%
 
 ```
 
-positive relationship
+positive relationship, most points concentrated on left side of graph
 
 <br>
 

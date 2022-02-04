@@ -5,7 +5,7 @@ library(magrittr)
 library(shinydashboard)
 library(shinyWidgets)
 library(colourpicker)
-
+library(gt)
 
 ## Prepare data for the app --------------------------------------
 source("prepare_data.R")
@@ -42,13 +42,15 @@ ui <- dashboardPage(
         fluidRow(
           #add boxes for each thing, order of boxes is order in app
           column(width = 3,
+            #Select nucleoprotein model, dnds/entropy values -------------------
             box(numericInput(inputId = "np_model", 
                               label = "Select nucleoprotein model",
-                              value = 1,
+                              value = 1, #start at 1
                               min = min_np_model,
                               max = max_np_model),
                   width = NULL,
                   tableOutput(outputId = "de_np_value_table")),
+            #Line of best fit --------------------------------------------------
             box(
               #title = "title?",
               #from shinyWidgets, replaces radioButtons
@@ -57,9 +59,11 @@ ui <- dashboardPage(
                            choices = choices_line_of_best_fit,
                            inline = TRUE), #makes the buttons inline
               width = NULL, #argument needed for column() to work (needs to be in each box)
-              colourInput(inputId = "line_bf_color", 
-                          label = "Select line of best fit color", 
-                          "purple"))
+              #adds condition that color picker will show only when yes selected
+              conditionalPanel(condition = "input.line_of_best_fit == 'Yes'", #couldn't get yes_string to work
+                colourInput(inputId = "line_bf_color", 
+                            label = "Select line of best fit color", 
+                            value = "purple"))) #start at purple
             ), #column()
           column(width = 7,
             box(plotOutput(outputId = "sim_scatter", 
@@ -73,9 +77,17 @@ ui <- dashboardPage(
       tabItem(tabName = "sub_01", #tab id (defined above)
               h3("Tab 2 content"), #header level, h1, h2, etc.
               fluidRow(
-                box(tableOutput(outputId = "filler"))
+                column(width = 3,
+                       #Select dnds/entropy (x), bias/slope (y) -------------------
+                       box(pickerInput(inputId = "dnds_entropy", 
+                                       label = "Select x-axis",
+                                       choices = choices_de),
+                            pickerInput(inputId = "bias_slope", 
+                                        label = "Select y-axis",
+                                        choices = choices_bs),
+                           width = NULL)), #column()
+                box(plotOutput(outputId = "de_bs_plot"))
               ) #fluidRow() 
-              
       ) #tabItem() 
     ) #tabItems() 
   ) #dashboardBody() 
@@ -85,6 +97,7 @@ ui <- dashboardPage(
 server <- function(input, output) {
   
   # renderPlot: simulation scatterplot ----------------------
+  #base plot
   output$sim_scatter <- renderPlot({
     sbl_de_bs_data %>%
       filter(np_sim_model == input$np_model) %>%
@@ -95,8 +108,14 @@ server <- function(input, output) {
       facet_grid(cols = vars(model),
                  rows = vars(ASRV)) + 
       geom_abline(color = "red") +
+      #this is not working (with only seeing bias and slope_when_yint0)
+      annotate("text", #what should be annotated onto plot (text output)
+               label = input$np_model, #is there a way for it to be attached to variables?
+               y = 2.75,
+               x = 0.25) +
       theme_bw() -> sim_plot
     
+    #add line of best fit
     if (input$line_of_best_fit == yes_string) {
       
       sim_plot <- sim_plot + 
@@ -115,12 +134,23 @@ server <- function(input, output) {
       filter(np_sim_model == input$np_model) %>%
       select(dnds, entropy) %>%
       distinct() #value kept repeating?
-  }, digits = 3
+  }, digits = 3 #how many decimals
   )
   
-  output$filler <- renderTable({
-    filler_table
-  })
+  #renderPlot() dnds/entropy (x), bias/slope (y)
+  output$de_bs_plot <- renderPlot({
+    de_bs_function <- function(x_axis, y_axis) {
+    sbl_de_bs_data %>%
+      ggplot() +
+      aes(x = {{x_axis}}, 
+          y = {{y_axis}}) +
+      geom_point() +
+      facet_grid(cols = vars(model),
+                  rows = vars(ASRV)) 
+    } #function
+    #not working :(
+    de_bs_function(input$choices_de, input$choices_bs)
+    })
 }
 
 #3. knits ui and server together --------------------------------------------------
