@@ -101,7 +101,13 @@ server <- function(input, output) {
   output$sim_scatter <- renderPlot({
     sbl_de_bs_data %>%
       filter(np_sim_model == input$np_model) %>%
-      ggplot() + 
+      mutate(bias = round(bias, 3), 
+             slope_when_yint0 = round(slope_when_yint0,3)) -> data_to_plot
+    
+    data_to_plot %>%
+      filter(sim_branch_length == 0.01) -> data_to_label # this way labels aren't stacked 30+ times on top of each other
+
+    ggplot(data_to_plot) + 
       aes(x = persite_count, 
           y = branch_length) + 
       geom_point() +
@@ -109,10 +115,11 @@ server <- function(input, output) {
                  rows = vars(ASRV)) + 
       geom_abline(color = "red") +
       #this is not working (with only seeing bias and slope_when_yint0)
-      annotate("text", #what should be annotated onto plot (text output)
-               label = input$np_model, #is there a way for it to be attached to variables?
-               y = 2.75,
-               x = 0.25) +
+      geom_text(data = data_to_label,
+               aes(label = bias), # ALERT NEEDS TO BE INPUT$SOMETHINGOROTHER
+               y = Inf,
+               x = -Inf,
+               hjust = -0.25, vjust = 2) +
       theme_bw() -> sim_plot
     
     #add line of best fit
@@ -139,18 +146,8 @@ server <- function(input, output) {
   
   #renderPlot() dnds/entropy (x), bias/slope (y)
   output$de_bs_plot <- renderPlot({
-    de_bs_function <- function(x_axis, y_axis) {
-    sbl_de_bs_data %>%
-      ggplot() +
-      aes(x = {{x_axis}}, 
-          y = {{y_axis}}) +
-      geom_point() +
-      facet_grid(cols = vars(model),
-                  rows = vars(ASRV)) 
-    } #function
-    #not working :(
-    de_bs_function(input$choices_de, input$choices_bs)
-    })
+    de_bs_plot_function(input$dnds_entropy, input$bias_slope)
+  })
 }
 
 #3. knits ui and server together --------------------------------------------------

@@ -25,5 +25,19 @@ max_np_model <- 498
 yes_string <- "Yes"
 no_string <- "No"
 choices_line_of_best_fit <- c(yes_string, no_string)
-choices_de <- names(sbl_de_bs_data)[names(sbl_de_bs_data) %in% c("dnds", "entropy")]
-choices_bs <- names(sbl_de_bs_data)[names(sbl_de_bs_data) %in% c("bias", "slope_when_yint0")]
+choices_de <-  c("dnds", "entropy")
+choices_bs <-  c("bias", "slope_when_yint0")
+
+
+# Functions ----------------------------------------------
+de_bs_plot_function <- function(x_axis, y_axis) {
+  x_axis <- as.symbol(x_axis)
+  y_axis <- as.symbol(y_axis)
+  sbl_de_bs_data %>%
+    ggplot() +
+    aes(x = {{x_axis}}, 
+        y = {{y_axis}}) +
+    geom_point() +
+    facet_grid(cols = vars(model),
+               rows = vars(ASRV)) 
+} 
