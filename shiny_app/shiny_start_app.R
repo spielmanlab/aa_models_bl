@@ -50,10 +50,16 @@ ui <- dashboardPage(
                               max = max_np_model),
                   width = NULL,
                   tableOutput(outputId = "de_np_value_table")),
+            #show text of bias or slope ---------------------------------------
+            box(
+              awesomeRadio(inputId = "bias_or_slope",
+                           label = "Display bias or slope on the plot",
+                           choices = choices_bs,
+                           inline = TRUE),
+                width = NULL),
             #Line of best fit --------------------------------------------------
             box(
               #title = "title?",
-              #from shinyWidgets, replaces radioButtons
               awesomeRadio(inputId = "line_of_best_fit",
                            label = "Show line of best fit?",
                            choices = choices_line_of_best_fit,
@@ -66,9 +72,8 @@ ui <- dashboardPage(
                             value = "purple"))) #start at purple
             ), #column()
           column(width = 7,
-            box(plotOutput(outputId = "sim_scatter", 
-                            #how long the plot is?
-                            height = 300),
+            box(plotOutput(outputId = "sim_scatter"),
+                height = 550,
                 width = NULL)) #column()
         ) #fluidRow() 
       ), #tabItem() 
@@ -96,13 +101,13 @@ ui <- dashboardPage(
 #2. functions to make the plot, table ----------------------------------------------------
 server <- function(input, output) {
   
-  # renderPlot: simulation scatterplot ----------------------
+  # Tab 1 renderPlot: simulation scatterplot -------------------------------------
   #base plot
   output$sim_scatter <- renderPlot({
     sbl_de_bs_data %>%
       filter(np_sim_model == input$np_model) %>%
       mutate(bias = round(bias, 3), 
-             slope_when_yint0 = round(slope_when_yint0,3)) -> data_to_plot
+             slope_when_yint0 = round(slope_when_yint0, 3)) -> data_to_plot
     
     data_to_plot %>%
       filter(sim_branch_length == 0.01) -> data_to_label # this way labels aren't stacked 30+ times on top of each other
@@ -129,13 +134,15 @@ server <- function(input, output) {
         geom_smooth(method = "lm", 
                     color = input$line_bf_color, 
                     size = 0.5)
-    }
+      } #if
     sim_plot # return the final plot
-  }) #renderPlot() 
+    },
+  height = 500,
+  width = 930) #renderPlot()
   
   #not separated by commas
   
-  #renderTable: dnds, entropy values of simulation scatterplot (by np model) --------
+  #Tab 1 renderTable: dnds, entropy values of simulation scatterplot (by np model) --------------
   output$de_np_value_table <- renderTable({
     sbl_de_bs_data %>%
       filter(np_sim_model == input$np_model) %>%
@@ -144,11 +151,11 @@ server <- function(input, output) {
   }, digits = 3 #how many decimals
   )
   
-  #renderPlot() dnds/entropy (x), bias/slope (y)
+  #Tab 2 Subsection 1 renderPlot() dnds/entropy (x), bias/slope (y) -------------------------
   output$de_bs_plot <- renderPlot({
     de_bs_plot_function(input$dnds_entropy, input$bias_slope)
   })
 }
 
-#3. knits ui and server together --------------------------------------------------
+#3. knits ui and server together -------------------------------------------------------
 shinyApp(ui = ui, server = server)
