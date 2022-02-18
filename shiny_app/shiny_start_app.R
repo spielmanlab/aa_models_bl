@@ -121,7 +121,7 @@ server <- function(input, output) {
       geom_abline(color = "red") +
       #this is not working (with only seeing bias and slope_when_yint0)
       geom_text(data = data_to_label,
-                # couldn't get to work
+                #couldn't get to work :|
                 #input needs to be string (bias or slope) so you can pick from the 2 buttons in the app
                 #label needs the actual data/numbers
                 #if feed in actual data (ie. selecting the columns and saving to variable), Shiny thinks datapoints are options in app
