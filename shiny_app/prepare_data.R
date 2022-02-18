@@ -36,7 +36,7 @@ de_bs_plot_function <- function(x_axis, y_axis) {
     ggplot() +
     aes(x = {{x_axis}}, 
         y = {{y_axis}}) +
-    geom_point(alpha = 0.25) + #point opacity not changing?
+    geom_point(alpha = 0.25) + #point opacity not changing? - because SO many points, hard to see that it does change!
     facet_grid(cols = vars(model),
                rows = vars(ASRV),
                scales = "free_y")

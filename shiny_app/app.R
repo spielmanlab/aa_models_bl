@@ -111,7 +111,11 @@ server <- function(input, output) {
     
     data_to_plot %>%
       filter(sim_branch_length == 0.01) -> data_to_label # this way labels aren't stacked 30+ times on top of each other
-
+    
+    # Convert string input$bias_or_slope to symbol so can use it in {{}}
+    label_column_symbol <- as.symbol(input$bias_or_slope)
+    
+    
     ggplot(data_to_plot) + 
       aes(x = persite_count, 
           y = branch_length) + 
@@ -125,7 +129,7 @@ server <- function(input, output) {
                 #input needs to be string (bias or slope) so you can pick from the 2 buttons in the app
                 #label needs the actual data/numbers
                 #if feed in actual data (ie. selecting the columns and saving to variable), Shiny thinks datapoints are options in app
-               aes(label = bias), # ALERT NEEDS TO BE INPUT$SOMETHINGOROTHER
+               aes(label = {{label_column_symbol}}), # ALERT NEEDS TO BE INPUT$SOMETHINGOROTHER
                y = Inf,
                x = -Inf,
                hjust = -0.25, vjust = 2) +
