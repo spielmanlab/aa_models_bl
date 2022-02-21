@@ -72,9 +72,7 @@ ui <- dashboardPage(
                             value = "purple"))) #start at purple
             ), #column()
           column(width = 7,
-            box(plotOutput(outputId = "sim_scatter"),
-                height = 550,
-                width = NULL)) #column()
+                 plotOutput(outputId = "sim_scatter")) #column()
         ) #fluidRow() 
       ), #tabItem() 
       #Subsection 1 table
@@ -146,7 +144,7 @@ server <- function(input, output) {
     sim_plot # return the final plot
     },
   height = 500,
-  width = 930) #renderPlot()
+  width = 800) #renderPlot()
   
   #not separated by commas
   
