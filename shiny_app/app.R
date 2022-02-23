@@ -52,7 +52,7 @@ ui <- dashboardPage(
                   tableOutput(outputId = "de_np_value_table")),
             #show text of bias or slope ---------------------------------------
             box(
-              awesomeRadio(inputId = "bias_or_slope",
+              awesomeRadio(inputId = "tab1_bias_or_slope_button",
                            label = "Display bias or slope on the plot",
                            choices = choices_bs,
                            inline = TRUE),
@@ -60,13 +60,13 @@ ui <- dashboardPage(
             #Line of best fit --------------------------------------------------
             box(
               #title = "title?",
-              awesomeRadio(inputId = "line_of_best_fit",
+              awesomeRadio(inputId = "line_of_best_fit_button",
                            label = "Show line of best fit?",
                            choices = choices_line_of_best_fit,
                            inline = TRUE), #makes the buttons inline
               width = NULL, #argument needed for column() to work (needs to be in each box)
               #adds condition that color picker will show only when yes selected
-              conditionalPanel(condition = "input.line_of_best_fit == 'Yes'", #couldn't get yes_string to work
+              conditionalPanel(condition = "input.line_of_best_fit_button == 'Yes'", #couldn't get yes_string to work
                 colourInput(inputId = "line_bf_color", 
                             label = "Select line of best fit color", 
                             value = "purple"))) #start at purple
@@ -82,10 +82,10 @@ ui <- dashboardPage(
               fluidRow(
                 column(width = 3,
                        #Select dnds/entropy (x), bias/slope (y) -------------------
-                       box(pickerInput(inputId = "dnds_entropy", 
+                       box(pickerInput(inputId = "tab2_sub1_x_axis_select", 
                                        label = "Select x-axis",
                                        choices = choices_de),
-                            pickerInput(inputId = "bias_slope", 
+                            pickerInput(inputId = "tab2_sub1_y_axis_select", 
                                         label = "Select y-axis",
                                         choices = choices_bs),
                            width = NULL)), #column()
@@ -111,7 +111,7 @@ server <- function(input, output) {
       filter(sim_branch_length == 0.01) -> data_to_label # this way labels aren't stacked 30+ times on top of each other
     
     # Convert string input$bias_or_slope to symbol so can use it in {{}}
-    label_column_symbol <- as.symbol(input$bias_or_slope)
+    label_column_symbol <- as.symbol(input$tab1_bias_or_slope_button)
     
     
     ggplot(data_to_plot) + 
@@ -134,7 +134,7 @@ server <- function(input, output) {
       theme_bw() -> sim_plot
     
     #add line of best fit
-    if (input$line_of_best_fit == yes_string) {
+    if (input$line_of_best_fit_button == yes_string) {
       
       sim_plot <- sim_plot + 
         geom_smooth(method = "lm", 
@@ -159,7 +159,7 @@ server <- function(input, output) {
   
   #Tab 2 Subsection 1 renderPlot() dnds/entropy (x), bias/slope (y) -------------------------
   output$de_bs_plot <- renderPlot({
-    de_bs_plot_function(input$dnds_entropy, input$bias_slope)
+    de_bs_plot_function(input$tab2_sub1_x_axis_select, input$tab2_sub1_y_axis_select)
   }) #aesthetics not updating???????
 }
 
