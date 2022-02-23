@@ -1,7 +1,7 @@
 #path to data
-path_to_sbl <- file.path(here::here(), "results", "simulation_branch_lengths_counts.csv")
-path_to_de <- file.path(here::here(), "results", "np_site_dnds_entropy.csv")
-path_to_bs <- file.path(here::here(), "results", "simulation_bias_slope.csv")
+path_to_sbl <- file.path(here::here(), "results_now", "simulation_branch_lengths_counts.csv")
+path_to_de <- file.path(here::here(), "results_now", "np_site_dnds_entropy.csv")
+path_to_bs <- file.path(here::here(), "results_now", "simulation_bias_slope.csv")
 
 #read in data
 sbl_data <- read_csv(path_to_sbl)
