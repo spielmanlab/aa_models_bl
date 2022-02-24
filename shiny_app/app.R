@@ -89,7 +89,7 @@ ui <- dashboardPage(
                                         label = "Select y-axis",
                                         choices = choices_bs),
                            width = NULL)), #column()
-                box(plotOutput(outputId = "de_bs_plot"))
+                plotOutput(outputId = "de_bs_plot")
               ) #fluidRow() 
       ) #tabItem() 
     ) #tabItems() 
@@ -160,7 +160,9 @@ server <- function(input, output) {
   #Tab 2 Subsection 1 renderPlot() dnds/entropy (x), bias/slope (y) -------------------------
   output$de_bs_plot <- renderPlot({
     de_bs_plot_function(input$tab2_sub1_x_axis_select, input$tab2_sub1_y_axis_select)
-  }) #aesthetics not updating???????
+  },
+  height = 500,
+  width = 800)
 }
 
 #3. knits ui and server together -------------------------------------------------------
