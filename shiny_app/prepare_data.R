@@ -36,7 +36,8 @@ de_bs_plot_function <- function(x_axis, y_axis) {
     ggplot() +
     aes(x = {{x_axis}}, 
         y = {{y_axis}}) +
-    geom_point(alpha = 0.25) + #point opacity not changing? - because SO many points, hard to see that it does change!
+    geom_hex(bins = 25) + #because SO many points
+    scale_fill_viridis_c(option = 'viridis') +
     facet_grid(cols = vars(model),
                rows = vars(ASRV),
                scales = "free_y")
