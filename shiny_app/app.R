@@ -71,11 +71,13 @@ ui <- dashboardPage(
                             label = "Select line of best fit color", 
                             value = "purple"))) #start at purple
             ), #left column()
+            #tab 1 scatterplot output -----------------------------------------------
             column(width = 6,
                    plotOutput(outputId = "sim_scatter"))
           ), #fluidRow() 
+        #tab 1 ic table output --------------------------------------------------
         fluidRow(box(width = NULL,
-                     tableOutput(outputId = "tab1_ic_table")))
+                     gt_output(outputId = "tab1_ic_table")))
       ), #tabItem() 
       #Subsection 1 table
       # tabName sub_01 ----------------------------------------------
@@ -145,7 +147,7 @@ server <- function(input, output) {
       } #if
     sim_plot # return the final plot
     },
-  height = 460,
+  height = 461,
   width = 800) #renderPlot()
   
   #not separated by commas
@@ -158,6 +160,21 @@ server <- function(input, output) {
       distinct() #value kept repeating?
   }, digits = 3 #how many decimals
   )
+  
+  #Tab 1 renderTable: ic data corresponding to np_sim_model -----------------------------
+  #need to make it so that rows (like LG, Poisson) is column name
+  output$tab1_ic_table <- render_gt({
+    combined_data %>%
+      select(np_sim_model, ASRV, model, ic_rank, ic_weight) %>%
+      filter(np_sim_model == input$np_model) %>%
+      gt() %>%
+      tab_header(title = "Information Criterion (IC)") %>%
+      tab_row_group(label = "ASRV",
+                    rows = ASRV) %>%
+      tab_spanner(label = "Model",
+                  columns = model) %>% #need to show each model (rows??)
+      fmt_number(columns = c(ic_rank, ic_weight))
+  })
   
   #Tab 2 Subsection 1 renderPlot() dnds/entropy (x), bias/slope (y) -------------------------
   output$de_bs_plot <- renderPlot({
