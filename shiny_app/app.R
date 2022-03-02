@@ -38,8 +38,8 @@ ui <- dashboardPage(
         # Tab 1 --------------------------------------------------------
         tabName = "tab_01", #tab id (defined above)
         h3("Tab 1 content"), #header level, h1, h2, etc.
-        #Boxes need to be put in a row (or column)
         fluidRow(
+          #Boxes need to be put in a row (or column)
           #add boxes for each thing, order of boxes is order in app
           column(width = 3,
             #Select nucleoprotein model, dnds/entropy values -------------------
@@ -70,10 +70,12 @@ ui <- dashboardPage(
                 colourInput(inputId = "line_bf_color", 
                             label = "Select line of best fit color", 
                             value = "purple"))) #start at purple
-            ), #column()
-          column(width = 7,
-                 plotOutput(outputId = "sim_scatter")) #column()
-        ) #fluidRow() 
+            ), #left column()
+            column(width = 6,
+                   plotOutput(outputId = "sim_scatter"))
+          ), #fluidRow() 
+        fluidRow(box(width = NULL,
+                     tableOutput(outputId = "tab1_ic_table")))
       ), #tabItem() 
       #Subsection 1 table
       # tabName sub_01 ----------------------------------------------
@@ -143,7 +145,7 @@ server <- function(input, output) {
       } #if
     sim_plot # return the final plot
     },
-  height = 500,
+  height = 460,
   width = 800) #renderPlot()
   
   #not separated by commas
