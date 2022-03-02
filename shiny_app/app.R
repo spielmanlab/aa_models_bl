@@ -102,7 +102,7 @@ server <- function(input, output) {
   # Tab 1 renderPlot: simulation scatterplot -------------------------------------
   #base plot
   output$sim_scatter <- renderPlot({
-    sbl_de_bs_data %>%
+    combined_data %>%
       filter(np_sim_model == input$np_model) %>%
       mutate(bias = round(bias, 3), 
              slope_when_yint0 = round(slope_when_yint0, 3)) -> data_to_plot
@@ -150,7 +150,7 @@ server <- function(input, output) {
   
   #Tab 1 renderTable: dnds, entropy values of simulation scatterplot (by np model) --------------
   output$de_np_value_table <- renderTable({
-    sbl_de_bs_data %>%
+    combined_data %>%
       filter(np_sim_model == input$np_model) %>%
       select(dnds, entropy) %>%
       distinct() #value kept repeating?
