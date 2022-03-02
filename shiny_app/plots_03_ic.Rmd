@@ -1,0 +1,110 @@
+---
+title: "Practice Plots"
+subtitle: "3/1/2022"
+author: "Courtney Charlesworth and Stephanie Spielman"
+output: 
+  html_document:
+    theme: readable
+    highlight: pygments
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+#path to data file
+path_to_ic <- file.path(here::here(), "results_now", "simulation_ic_ranks_weights_per_bl.csv")
+
+#read data file
+ic_data <-read_csv(path_to_ic) %>% 
+  rename(np_sim_model = site) %>%
+  mutate(model = factor(model, levels = c("FLU", "LG", "JTT", "WAG", "Poisson")))
+
+```
+
+<br>
+
+### Variables
+
++ `np_sim_model` = nucleoprotein simulation model
+
++ `sim_branch_length` = amount of branch length provided to simulator
+
++ `model` = the substitution models (FLU, WAG, JTT, LG, Poisson = equal)
+
++ `ASRV` = gamma distribution (yes or no)
+
+  - rate variation/heterogeneity, fancy statistics  
+
++ `ic_type` = information criterion (tells us which model is better or worse)
+
+  - there are 3 that we're looking at: AIC, AICc, and BIC
+
++ `ic_rank` = ranks model 1-10 (1 is best, 10 is worst)
+
++ `ic_weight` = shows magnitude of difference between how good models did
+
+  - there can be big differences and 1-10 (`ic_rank`) doesn't properly show this
+
+  - sums to 1 (best), 0 is really bad
+  
+  
+*goal: which model is best and in what conditions?*
+
+<br>
+
+### Plot 1
+```{r plot1}
+#how many times the models had a #1 ranking
+ic_data %>%
+  filter(ic_rank == 1) %>%
+  count(model, name = "ic_rank_1_count") %>%
+  #LG has 0 #1 rankings so it got filtered out
+  add_row(model = "LG", ic_rank_1_count = 0) %>% 
+  print() %>%
+  ggplot() +
+  aes(x = model,
+      y = ic_rank_1_count) +
+  geom_col(fill = "turquoise4") +
+  #text of count because WAG and Poisson so small they don't show up
+  geom_text(aes(x = model,
+                y = ic_rank_1_count + 2000,
+                label = ic_rank_1_count))
+
+```
+
+<br>
+
+### Plot 2
+```{r plot2}
+#really ugly plot. just wanted to look at everything at once
+ic_data %>%
+  ggplot() +
+    aes(x = ic_type,
+        y = ic_weight) +
+    geom_col() +
+    facet_grid(cols = vars(model),
+               rows = vars(ASRV),
+               scales = "free_y")
+
+```
+
+<br>
+
+### Plot 3
+```{r plot3}
+#distribution
+ic_data %>%
+  ggplot() +
+    aes(x = ic_rank) +
+    geom_histogram(bins = 5,
+                   fill = "blue") +
+    facet_grid(cols = vars(model),
+               rows = vars(ic_type))
+
+```
+
+IC thinks Poisson sucks 
+
