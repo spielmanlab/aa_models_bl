@@ -25,6 +25,7 @@ combined_data <- sbl_data %>%
 # UI Variables ----------------------------------
 min_np_model <- 1
 max_np_model <- 498
+choices_sbl <- c(0.01, 0.05, seq(from = 0.1, to = 3, by = 0.1))
 yes_string <- "Yes"
 no_string <- "No"
 choices_line_of_best_fit <- c(yes_string, no_string)
@@ -45,4 +46,3 @@ de_bs_plot_function <- function(x_axis, y_axis) {
                rows = vars(ASRV),
                scales = "free_y")
 } 
-

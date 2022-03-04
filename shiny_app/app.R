@@ -42,14 +42,20 @@ ui <- dashboardPage(
           #Boxes need to be put in a row (or column)
           #add boxes for each thing, order of boxes is order in app
           column(width = 3,
-            #Select nucleoprotein model, dnds/entropy values -------------------
+            #Select nucleoprotein model, sbl, dnds/entropy values -------------------
             box(numericInput(inputId = "np_model", 
                               label = "Select nucleoprotein model",
                               value = 1, #start at 1
                               min = min_np_model,
                               max = max_np_model),
-                  width = NULL,
-                  tableOutput(outputId = "de_np_value_table")),
+                  tableOutput(outputId = "de_np_value_table"),
+                  width = NULL), #top left box
+            box(pickerInput(inputId = "sim_bl",
+                            label = "Select simulation branch length",
+                            choices = choices_sbl,
+                            options = list(
+                              `live-search` = TRUE)),
+                width = NULL),
             #show text of bias or slope ---------------------------------------
             box(
               awesomeRadio(inputId = "tab1_bias_or_slope_button",
@@ -76,8 +82,9 @@ ui <- dashboardPage(
                    plotOutput(outputId = "sim_scatter"))
           ), #fluidRow() 
         #tab 1 ic table output --------------------------------------------------
-        fluidRow(box(width = NULL,
-                     gt_output(outputId = "tab1_ic_table")))
+        fluidRow(column(width = 6, 
+                        gt_output(outputId = "tab1_ic_table")),
+                 width = NULL)
       ), #tabItem() 
       #Subsection 1 table
       # tabName sub_01 ----------------------------------------------
@@ -117,24 +124,33 @@ server <- function(input, output) {
     # Convert string input$bias_or_slope to symbol so can use it in {{}}
     label_column_symbol <- as.symbol(input$tab1_bias_or_slope_button)
     
+    #Highlighted point on graph with #1 ranking for IC
+    combined_data %>% 
+      filter(np_sim_model == input$np_model, 
+             sim_branch_length == input$sim_bl, 
+             ic_rank == 1) -> ic_rank_1_highlight
     
     ggplot(data_to_plot) + 
       aes(x = persite_count, 
           y = branch_length) + 
+      #actual scatterplot 
       geom_point() +
+      #highlight point on plot
+      geom_point(data = ic_rank_1_highlight,
+                 aes(x = persite_count,
+                     y = branch_length,
+                     color = ic_rank),
+                 color = "orange",
+                 size = 4) +
       facet_grid(cols = vars(model),
                  rows = vars(ASRV)) + 
       geom_abline(color = "red") +
-      #this is not working (with only seeing bias and slope_when_yint0)
+      #bias or slope text displayed on graph
       geom_text(data = data_to_label,
-                #couldn't get to work :|
-                #input needs to be string (bias or slope) so you can pick from the 2 buttons in the app
-                #label needs the actual data/numbers
-                #if feed in actual data (ie. selecting the columns and saving to variable), Shiny thinks datapoints are options in app
-               aes(label = {{label_column_symbol}}), # ALERT NEEDS TO BE INPUT$SOMETHINGOROTHER
-               y = Inf,
+               aes(label = {{label_column_symbol}}), 
+               y = Inf, 
                x = -Inf,
-               hjust = -0.25, vjust = 2) +
+               hjust = -0.25, vjust = 2) + #so that values display (axes change according to np_model)
       theme_bw() -> sim_plot
     
     #add line of best fit
@@ -155,6 +171,7 @@ server <- function(input, output) {
   #Tab 1 renderTable: dnds, entropy values of simulation scatterplot (by np model) --------------
   output$de_np_value_table <- renderTable({
     combined_data %>%
+      #dnds and entropy values will change with user selected nucleoprotein model
       filter(np_sim_model == input$np_model) %>%
       select(dnds, entropy) %>%
       distinct() #value kept repeating?
@@ -162,19 +179,31 @@ server <- function(input, output) {
   )
   
   #Tab 1 renderTable: ic data corresponding to np_sim_model -----------------------------
-  #need to make it so that rows (like LG, Poisson) is column name
+  #good way to also show ic_weight???
   output$tab1_ic_table <- render_gt({
     combined_data %>%
-      select(np_sim_model, ASRV, model, ic_rank, ic_weight) %>%
-      filter(np_sim_model == input$np_model) %>%
+      #have to select otherwise gt shows every single column
+      select(np_sim_model, sim_branch_length, model, ASRV, ic_type, ic_rank) %>%
+      #table changes when user changes these inputs in app
+      filter(np_sim_model == input$np_model,
+             sim_branch_length == input$sim_bl) %>%
+      #don't want these in table
+      select(-np_sim_model, -sim_branch_length) %>%
+      #model is column names
+      pivot_wider(names_from = "model",
+                  values_from = "ic_rank") %>%
+      distinct() %>%
       gt() %>%
-      tab_header(title = "Information Criterion (IC)") %>%
-      tab_row_group(label = "ASRV",
-                    rows = ASRV) %>%
+      tab_header(title = "Information Criterion (IC) Ranking",
+                 subtitle = "Which model is the best and when?") %>%
+      #like a title above these specific columns
+      tab_spanner(label = "Info. Name?",
+                  columns = c(ASRV, ic_type)) %>%
       tab_spanner(label = "Model",
-                  columns = model) %>% #need to show each model (rows??)
-      fmt_number(columns = c(ic_rank, ic_weight))
-  })
+                  columns = c(FLU, LG, JTT, WAG, Poisson))
+  }, height = 600,
+     width = 600
+    )
   
   #Tab 2 Subsection 1 renderPlot() dnds/entropy (x), bias/slope (y) -------------------------
   output$de_bs_plot <- renderPlot({
