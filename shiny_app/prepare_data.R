@@ -20,7 +20,9 @@ combined_data <- sbl_data %>%
   left_join(ic_data) %>%
   #avoid getting confused with poor use of "site" term all over the place
   rename(np_sim_model = site) %>%
-  mutate(model = factor(model, levels = c("FLU", "LG", "JTT", "WAG", "Poisson")))
+  mutate(model = factor(model, levels = c("FLU", "LG", "JTT", "WAG", "Poisson"))) %>%
+  #so tab 1 plot is TRUE, FALSE instead of FALSE, TRUE (not showing up in gt table?)
+  mutate(ASRV = factor(ASRV, levels = c("TRUE", "FALSE")))
 
 # UI Variables ----------------------------------
 min_np_model <- 1

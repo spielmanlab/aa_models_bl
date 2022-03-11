@@ -82,9 +82,12 @@ ui <- dashboardPage(
                    plotOutput(outputId = "sim_scatter"))
           ), #fluidRow() 
         #tab 1 ic table output --------------------------------------------------
-        fluidRow(column(width = 6, 
-                        gt_output(outputId = "tab1_ic_table")),
-                 width = NULL)
+        fluidRow(box(gt_output(outputId = "tab1_AIC_table"),
+                     width = 4),
+                 box(gt_output(outputId = "tab1_AICc_table"),
+                     width = 4),
+                 box(gt_output(outputId = "tab1_BIC_table"),
+                     width = 4))
       ), #tabItem() 
       #Subsection 1 table
       # tabName sub_01 ----------------------------------------------
@@ -125,10 +128,10 @@ server <- function(input, output) {
     label_column_symbol <- as.symbol(input$tab1_bias_or_slope_button)
     
     #Highlighted point on graph with #1 ranking for IC
-    combined_data %>% 
-      filter(np_sim_model == input$np_model, 
-             sim_branch_length == input$sim_bl, 
-             ic_rank == 1) -> ic_rank_1_highlight
+    #combined_data %>% 
+     # filter(np_sim_model == input$np_model, 
+     #        sim_branch_length == input$sim_bl, 
+     #        ic_rank == 1) -> ic_rank_1_highlight
     
     ggplot(data_to_plot) + 
       aes(x = persite_count, 
@@ -136,12 +139,12 @@ server <- function(input, output) {
       #actual scatterplot 
       geom_point() +
       #highlight point on plot
-      geom_point(data = ic_rank_1_highlight,
-                 aes(x = persite_count,
-                     y = branch_length,
-                     color = ic_rank),
-                 color = "orange",
-                 size = 4) +
+      #geom_point(data = ic_rank_1_highlight,
+      #           aes(x = persite_count,
+      #               y = branch_length,
+      #               color = ic_rank),
+      #           color = "orange",
+      #           size = 4) +
       facet_grid(cols = vars(model),
                  rows = vars(ASRV)) + 
       geom_abline(color = "red") +
@@ -163,7 +166,7 @@ server <- function(input, output) {
       } #if
     sim_plot # return the final plot
     },
-  height = 461,
+  height = 576,
   width = 800) #renderPlot()
   
   #not separated by commas
@@ -178,32 +181,98 @@ server <- function(input, output) {
   }, digits = 3 #how many decimals
   )
   
-  #Tab 1 renderTable: ic data corresponding to np_sim_model -----------------------------
-  #good way to also show ic_weight???
-  output$tab1_ic_table <- render_gt({
+  #Tab 1 render_gt: AIC, ic ranking corresponding to np_sim_model -----------------------------
+  output$tab1_AIC_table <- render_gt({
+    combined_data %>%
+      #have to select otherwise gt shows every single column
+      select(np_sim_model, sim_branch_length, model, ASRV, ic_type, ic_rank, ic_weight) %>%
+      #table changes when user changes these inputs in app
+      filter(ic_type == "AIC",
+             np_sim_model == input$np_model,
+             sim_branch_length == input$sim_bl) %>%
+      #don't want these in table
+      select(-np_sim_model, -sim_branch_length, -ic_type, -ic_weight) %>%
+      #model is column names
+      pivot_wider(names_from = "model",
+                  values_from = "ic_rank") %>%
+      #make table
+      gt() %>%
+      tab_header(title = "AIC",
+                 subtitle = "subtitle?") %>%
+      #like a title above these specific columns
+      tab_spanner(label = "Model",
+                  columns = c(FLU, LG, JTT, WAG, Poisson)) %>%
+      #adds a note to bottom of table
+      tab_source_note(
+        source_note = "can add a note to the table.") %>%
+      #Poisson wider than other cells so this makes model col width the same
+      cols_width(c(FLU, LG, JTT, WAG, Poisson) ~ px(60)) #%>%
+      #color cells according to ic_weight
+      #data_color(data = combined_data$ic_weight,
+       #          columns = c(FLU, LG, JTT, WAG, Poisson),
+        #         colors = scales::col_numeric(
+         #          palette = c("blue", "white")),
+          #       domain = c(0, 1)) #column scale endpoints
+  })
+  
+  #Tab 1 render_gt: AICc, ic ranking corresponding to np_sim_model -----------------------------
+  output$tab1_AICc_table <- render_gt({
     combined_data %>%
       #have to select otherwise gt shows every single column
       select(np_sim_model, sim_branch_length, model, ASRV, ic_type, ic_rank) %>%
       #table changes when user changes these inputs in app
-      filter(np_sim_model == input$np_model,
+      filter(ic_type == "AICc",
+             np_sim_model == input$np_model,
              sim_branch_length == input$sim_bl) %>%
       #don't want these in table
-      select(-np_sim_model, -sim_branch_length) %>%
+      select(-np_sim_model, -sim_branch_length, -ic_type) %>%
       #model is column names
       pivot_wider(names_from = "model",
                   values_from = "ic_rank") %>%
-      distinct() %>%
       gt() %>%
-      tab_header(title = "Information Criterion (IC) Ranking",
-                 subtitle = "Which model is the best and when?") %>%
+      tab_header(title = "AICc") %>%
       #like a title above these specific columns
-      tab_spanner(label = "Info. Name?",
-                  columns = c(ASRV, ic_type)) %>%
       tab_spanner(label = "Model",
-                  columns = c(FLU, LG, JTT, WAG, Poisson))
-  }, height = 600,
-     width = 600
-    )
+                  columns = c(FLU, LG, JTT, WAG, Poisson)) %>%
+      #Poisson wider than other cells so this makes model col width the same
+      cols_width(c(FLU, LG, JTT, WAG, Poisson) ~ px(60)) #%>%
+      #color cells according to ic_weight
+      #data_color(data = combined_data$ic_weight,
+       #          columns = c(FLU, LG, JTT, WAG, Poisson),
+        #         colors = scales::col_numeric(
+         #          palette = c("blue", "white")),
+          #       domain = c(0, 1)) #column scale endpoints
+  })
+  
+  #Tab 1 render_gt: BIC, ic ranking corresponding to np_sim_model -----------------------------
+  output$tab1_BIC_table <- render_gt({
+    combined_data %>%
+      #have to select otherwise gt shows every single column
+      select(np_sim_model, sim_branch_length, model, ASRV, ic_type, ic_rank) %>%
+      #table changes when user changes these inputs in app
+      filter(ic_type == "BIC",
+             np_sim_model == input$np_model,
+             sim_branch_length == input$sim_bl) %>%
+      #don't want these in table
+      select(-np_sim_model, -sim_branch_length, -ic_type) %>%
+      #model is column names
+      pivot_wider(names_from = "model",
+                  values_from = "ic_rank") %>%
+      #make table
+      gt() %>%
+      tab_header(title = "BIC") %>%
+      #like a title above these specific columns
+      tab_spanner(label = "Model",
+                  columns = c(FLU, LG, JTT, WAG, Poisson)) %>%
+      #Poisson wider than other cells so this makes model col width the same
+      cols_width(c(FLU, LG, JTT, WAG, Poisson) ~ px(60)) #%>%
+      #color cells according to ic_weight
+      #data_color(data = combined_data$ic_weight,
+      #          columns = c(FLU, LG, JTT, WAG, Poisson),
+      #         colors = scales::col_numeric(
+      #          palette = c("blue", "white")),
+      #       domain = c(0, 1)) #column scale endpoints
+  })
   
   #Tab 2 Subsection 1 renderPlot() dnds/entropy (x), bias/slope (y) -------------------------
   output$de_bs_plot <- renderPlot({
