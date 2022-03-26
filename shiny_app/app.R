@@ -7,8 +7,9 @@ library(shinyWidgets)
 library(colourpicker)
 library(gt)
 
-## Prepare data for the app --------------------------------------
+## Prepare data for the app, separate file for UI variables and functions --------------------------------------
 source("prepare_data.R")
+source("util.R")
 
 #1. builds the ui, the web document (like the drop down menus) --------------------
 #dashboardPage instead of fluidPage
