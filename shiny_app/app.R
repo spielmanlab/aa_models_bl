@@ -222,27 +222,16 @@ server <- function(input, output) {
       #have to select otherwise gt shows every single column
       select(np_sim_model, sim_branch_length, model, `+G4`, ic_type, ic_rank) %>%
       #table changes when user changes these inputs in app
-      filter(ic_type == "AICc",
+      filter(ic_type == pick_ic_type,
              np_sim_model == input$np_model,
              sim_branch_length == input$sim_bl) %>%
       #don't want these in table
       select(-np_sim_model, -sim_branch_length, -ic_type) %>%
       #model is column names
       pivot_wider(names_from = "model",
-                  values_from = "ic_rank") %>%
-      gt() %>%
-      tab_header(title = "AICc") %>%
-      #like a title above these specific columns
-      tab_spanner(label = "Model",
-                  columns = c(FLU, LG, JTT, WAG, Poisson)) %>%
-      #Poisson wider than other cells so this makes model col width the same
-      cols_width(c(FLU, LG, JTT, WAG, Poisson) ~ px(60)) #%>%
-      #color cells according to ic_weight
-      #data_color(data = combined_data$ic_weight,
-       #          columns = c(FLU, LG, JTT, WAG, Poisson),
-        #         colors = scales::col_numeric(
-         #          palette = c("blue", "white")),
-          #       domain = c(0, 1)) #column scale endpoints
+                  values_from = "ic_rank")
+    
+      make_ic_table("AICc")
   })
   
   #Tab 1 render_gt: BIC, ic ranking corresponding to np_sim_model -----------------------------
@@ -277,7 +266,7 @@ server <- function(input, output) {
   
   #Tab 2 Subsection 1 renderPlot() dnds/entropy (x), bias/slope (y) -------------------------
   output$de_bs_plot <- renderPlot({
-    de_bs_plot_function(input$tab2_sub1_x_axis_select, input$tab2_sub1_y_axis_select)
+    plot_de_bs_scatter(input$tab2_sub1_x_axis_select, input$tab2_sub1_y_axis_select)
   },
   height = 500,
   width = 800)
