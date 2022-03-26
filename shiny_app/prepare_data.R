@@ -22,9 +22,10 @@ combined_data <- sbl_data %>%
   left_join(bs_data) %>% 
   left_join(ic_data) %>%
   #avoid getting confused with poor use of "site" term all over the place
-  rename(np_sim_model = site) %>%
-  #which ASRV
-  rename(`+G4` = ASRV) %>%
-  mutate(model = factor(model, levels = c("FLU", "LG", "JTT", "WAG", "Poisson"))) #%>%
-  #TRUE is first, this column is a logical vector column not factor so fct_relevel or fct_reorder doesn't work?
-  #mutate(`+G4` = fct_relevel(`+G4`, TRUE))
+  rename(np_sim_model = site,
+         `+G4` = ASRV) %>% #which ASRV
+  #right order for models
+  mutate(model = factor(model, levels = c("FLU", "LG", "JTT", "WAG", "Poisson"))#,
+         #`+G4`= as.factor(`+G4`), #no work
+         #`+G4` = fct_relevel(`+G4`, TRUE)#TRUE is first, this column is a logical vector column not factor so fct_relevel or fct_reorder doesn't work?
+         ) 

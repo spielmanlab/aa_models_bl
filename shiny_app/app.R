@@ -184,6 +184,16 @@ server <- function(input, output) {
   
   #Tab 1 render_gt: AIC, ic ranking corresponding to np_sim_model -----------------------------
   output$tab1_AIC_table <- render_gt({
+    #wrangling for best-fitting model weight
+    combined_data %>%
+      filter(ic_rank == 1,
+             ic_type == "AIC",
+             np_sim_model == input$np_model,
+             sim_branch_length == input$sim_bl) %>%
+      select(ic_weight) %>%
+      mutate(ic_weight = round(ic_weight, 2)) -> bf_model_weight
+     
+    #table 
     combined_data %>%
       #have to select otherwise gt shows every single column
       select(np_sim_model, sim_branch_length, model, `+G4`, ic_type, ic_rank, ic_weight) %>%
@@ -203,17 +213,19 @@ server <- function(input, output) {
       #like a title above these specific columns
       tab_spanner(label = "Model",
                   columns = c(FLU, LG, JTT, WAG, Poisson)) %>%
+      #Poisson wider than other cells so this makes model col width the same
+      cols_width(c(FLU, LG, JTT, WAG, Poisson) ~ px(60)) %>%
+      #color cell best fitting model
+      tab_style(
+        style = cell_fill(color = "lightblue"), #what to color
+        locations = cells_body( #where the color should show up
+          columns = c(FLU, LG, JTT, WAG, Poisson),
+          rows = (c(TRUE, FALSE) == 1)
+          )
+        ) %>%
       #adds a note to bottom of table
       tab_source_note(
-        source_note = "can add a note to the table.") %>%
-      #Poisson wider than other cells so this makes model col width the same
-      cols_width(c(FLU, LG, JTT, WAG, Poisson) ~ px(60)) #%>%
-      #color cells according to ic_weight
-      #data_color(data = combined_data$ic_weight,
-       #          columns = c(FLU, LG, JTT, WAG, Poisson),
-        #         colors = scales::col_numeric(
-         #          palette = c("blue", "white")),
-          #       domain = c(0, 1)) #column scale endpoints
+        source_note = glue::glue("The best-fitting model weight is {bf_model_weight}"))
   })
   
   #Tab 1 render_gt: AICc, ic ranking corresponding to np_sim_model -----------------------------
