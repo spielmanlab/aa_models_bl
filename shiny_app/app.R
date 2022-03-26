@@ -146,7 +146,7 @@ server <- function(input, output) {
       #           color = "orange",
       #           size = 4) +
       facet_grid(cols = vars(model),
-                 rows = vars(ASRV)) + 
+                 rows = vars(`+G4`)) + 
       geom_abline(color = "red") +
       #bias or slope text displayed on graph
       geom_text(data = data_to_label,
@@ -185,7 +185,7 @@ server <- function(input, output) {
   output$tab1_AIC_table <- render_gt({
     combined_data %>%
       #have to select otherwise gt shows every single column
-      select(np_sim_model, sim_branch_length, model, ASRV, ic_type, ic_rank, ic_weight) %>%
+      select(np_sim_model, sim_branch_length, model, `+G4`, ic_type, ic_rank, ic_weight) %>%
       #table changes when user changes these inputs in app
       filter(ic_type == "AIC",
              np_sim_model == input$np_model,
@@ -219,7 +219,7 @@ server <- function(input, output) {
   output$tab1_AICc_table <- render_gt({
     combined_data %>%
       #have to select otherwise gt shows every single column
-      select(np_sim_model, sim_branch_length, model, ASRV, ic_type, ic_rank) %>%
+      select(np_sim_model, sim_branch_length, model, `+G4`, ic_type, ic_rank) %>%
       #table changes when user changes these inputs in app
       filter(ic_type == "AICc",
              np_sim_model == input$np_model,
@@ -248,7 +248,7 @@ server <- function(input, output) {
   output$tab1_BIC_table <- render_gt({
     combined_data %>%
       #have to select otherwise gt shows every single column
-      select(np_sim_model, sim_branch_length, model, ASRV, ic_type, ic_rank) %>%
+      select(np_sim_model, sim_branch_length, model, `+G4`, ic_type, ic_rank) %>%
       #table changes when user changes these inputs in app
       filter(ic_type == "BIC",
              np_sim_model == input$np_model,
