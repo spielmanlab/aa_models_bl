@@ -190,7 +190,9 @@ server <- function(input, output) {
              ic_type == "AIC",
              np_sim_model == input$np_model,
              sim_branch_length == input$sim_bl) %>%
+      #only want this value
       select(ic_weight) %>%
+      #lots of decimals
       mutate(ic_weight = round(ic_weight, 2)) -> bf_model_weight
      
     #table 
@@ -241,8 +243,7 @@ server <- function(input, output) {
       select(-np_sim_model, -sim_branch_length, -ic_type) %>%
       #model is column names
       pivot_wider(names_from = "model",
-                  values_from = "ic_rank")
-    
+                  values_from = "ic_rank") #%>% #pipe into function??
       make_ic_table("AICc")
   })
   
