@@ -1,5 +1,5 @@
 #Data preparation file
-
+model_levels <- c("FLU", "LG", "JTT", "WAG", "Poisson")
 
 #path to data
 path_to_sbl <- file.path(here::here(), "results_now", "simulation_branch_lengths_counts.csv")
@@ -25,7 +25,7 @@ combined_data <- sbl_data %>%
   rename(np_sim_model = site,
          `+G4` = ASRV) %>% #which ASRV
   #right order for models
-  mutate(model = factor(model, levels = c("FLU", "LG", "JTT", "WAG", "Poisson"))#,
+  mutate(model = factor(model, levels = model_levels)#,
          #`+G4`= as.factor(`+G4`), #no work
          #`+G4` = fct_relevel(`+G4`, TRUE)#TRUE is first, this column is a logical vector column not factor so fct_relevel or fct_reorder doesn't work?
          ) 
