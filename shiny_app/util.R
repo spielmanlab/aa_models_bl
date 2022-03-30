@@ -14,7 +14,7 @@ choices_bs <-  c("bias", "slope_when_yint0")
 # Functions ------------------------------------------------------------------
 
 #tab 1 table function, ic rank/weight --------------------------------------
-make_ic_table <- function(pick_ic_type) {
+make_ic_table <- function(prep_ic_table, pick_ic_type) {
   combined_data %>%
     gt() %>%
     tab_header(title = pick_ic_type) %>% 
