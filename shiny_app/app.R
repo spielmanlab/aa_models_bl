@@ -11,11 +11,6 @@ library(gt)
 source("prepare_data.R")
 source("util.R")
 
-#what is the preferred location of this?
-#tab 1 ic table data preparation function ----------------------------------
-data_for_ic_table <- reactive({
-  prep_ic_table()
-}) 
 
 #1. builds the ui, the web document (like the drop down menus) --------------------
 #dashboardPage instead of fluidPage
@@ -119,7 +114,7 @@ ui <- dashboardPage(
 
 #2. functions to make the plot, table ----------------------------------------------------
 server <- function(input, output) {
-  
+
   # Tab 1 renderPlot: simulation scatterplot -------------------------------------
   #base plot
   output$sim_scatter <- renderPlot({
@@ -134,24 +129,11 @@ server <- function(input, output) {
     # Convert string input$bias_or_slope to symbol so can use it in {{}}
     label_column_symbol <- as.symbol(input$tab1_bias_or_slope_button)
     
-    #Highlighted point on graph with #1 ranking for IC
-    #combined_data %>% 
-     # filter(np_sim_model == input$np_model, 
-     #        sim_branch_length == input$sim_bl, 
-     #        ic_rank == 1) -> ic_rank_1_highlight
-    
     ggplot(data_to_plot) + 
       aes(x = persite_count, 
           y = branch_length) + 
       #actual scatterplot 
       geom_point() +
-      #highlight point on plot
-      #geom_point(data = ic_rank_1_highlight,
-      #           aes(x = persite_count,
-      #               y = branch_length,
-      #               color = ic_rank),
-      #           color = "orange",
-      #           size = 4) +
       facet_grid(cols = vars(model),
                  rows = vars(`+G4`)) + 
       geom_abline(color = "red") +
@@ -187,6 +169,12 @@ server <- function(input, output) {
       distinct() #value kept repeating?
   }, digits = 3 #how many decimals
   )
+
+
+  #Tab 1 render_gt: AICc, ic ranking corresponding to np_sim_model -----------------------------
+  output$tab1_AICc_table <- render_gt({
+    make_ic_table(data_for_ic_tables, input$np_model, input$sim_bl, "AICc")
+  })
   
   #Tab 1 render_gt: AIC, ic ranking corresponding to np_sim_model -----------------------------
   output$tab1_AIC_table <- render_gt({
@@ -201,6 +189,8 @@ server <- function(input, output) {
       #lots of decimals
       mutate(ic_weight = round(ic_weight, 2)) -> bf_model_weight
      
+    
+    fill_model_cell <- "FLU"
     #table 
     combined_data %>%
       #have to select otherwise gt shows every single column
@@ -227,7 +217,7 @@ server <- function(input, output) {
       tab_style(
         style = cell_fill(color = "lightblue"), #what to color
         locations = cells_body( #where the color should show up
-          columns = (c(FLU, LG, JTT, WAG, Poisson)), 
+          columns = (c(fill_model_cell)), 
           rows = (c(TRUE, FALSE) == 1)
           )
         ) %>%
@@ -236,11 +226,7 @@ server <- function(input, output) {
         source_note = glue::glue("The best-fitting model weight is {bf_model_weight}"))
   })
   
-  #Tab 1 render_gt: AICc, ic ranking corresponding to np_sim_model -----------------------------
-  output$tab1_AICc_table <- render_gt({
-      make_ic_table(data_for_ic_table(), "AICc")
-  })
-  
+
   #Tab 1 render_gt: BIC, ic ranking corresponding to np_sim_model -----------------------------
   output$tab1_BIC_table <- render_gt({
     combined_data %>%

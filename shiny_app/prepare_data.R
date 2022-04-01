@@ -22,10 +22,21 @@ combined_data <- sbl_data %>%
   left_join(bs_data) %>% 
   left_join(ic_data) %>%
   #avoid getting confused with poor use of "site" term all over the place
-  rename(np_sim_model = site,
-         `+G4` = ASRV) %>% #which ASRV
+  rename(np_sim_model = site, 
+         `+G4`        = ASRV) %>% #which ASRV
   #right order for models
-  mutate(model = factor(model, levels = model_levels)#,
-         #`+G4`= as.factor(`+G4`), #no work
-         #`+G4` = fct_relevel(`+G4`, TRUE)#TRUE is first, this column is a logical vector column not factor so fct_relevel or fct_reorder doesn't work?
+  mutate(model = factor(model, levels = model_levels),
+         `+G4` = ifelse(`+G4` == FALSE, "No", "Yes"), # get away from logical
+         `+G4` = fct_relevel(`+G4`, "Yes")
          ) 
+
+
+data_for_ic_tables <- combined_data %>%
+  #have to select otherwise gt shows every single column
+  select(np_sim_model, sim_branch_length, model, `+G4`, ic_type, ic_rank) %>%
+  #don't want to filter so that function works
+  group_by(ic_type) %>%
+  #model is column names
+  pivot_wider(names_from = "model",
+              values_from = "ic_rank") %>%
+  ungroup()
