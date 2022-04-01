@@ -14,22 +14,8 @@ source("util.R")
 #what is the preferred location of this?
 #tab 1 ic table data preparation function ----------------------------------
 data_for_ic_table <- reactive({
-  prep_ic_table <-  function() { #argument?
-    combined_data %>%
-      #have to select otherwise gt shows every single column
-      select(np_sim_model, sim_branch_length, model, `+G4`, ic_type, ic_rank) %>%
-      #table changes when user changes these inputs in app
-      filter(np_sim_model == input$np_model,
-             sim_branch_length == input$sim_bl) %>%
-      #don't want to filter so that function works
-      group_by(ic_type) %>%
-      #don't want these in table
-      select(-np_sim_model, -sim_branch_length, -ic_type) %>%
-      #model is column names
-      pivot_wider(names_from = "model",
-                  values_from = "ic_rank")
-  } #function(){}
-}) #reactive{()}
+  prep_ic_table()
+}) 
 
 #1. builds the ui, the web document (like the drop down menus) --------------------
 #dashboardPage instead of fluidPage
@@ -241,7 +227,7 @@ server <- function(input, output) {
       tab_style(
         style = cell_fill(color = "lightblue"), #what to color
         locations = cells_body( #where the color should show up
-          columns = c(FLU, LG, JTT, WAG, Poisson),
+          columns = (c(FLU, LG, JTT, WAG, Poisson)), 
           rows = (c(TRUE, FALSE) == 1)
           )
         ) %>%

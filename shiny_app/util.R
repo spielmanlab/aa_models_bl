@@ -14,6 +14,24 @@ choices_bs <-  c("bias", "slope_when_yint0")
 # Functions ------------------------------------------------------------------
 
 #tab 1 table function, ic rank/weight --------------------------------------
+#prep_ic_table data function -------------------------------
+prep_ic_table <-  function() { #argument?
+  combined_data %>%
+    #have to select otherwise gt shows every single column
+    select(np_sim_model, sim_branch_length, model, `+G4`, ic_type, ic_rank) %>%
+    #table changes when user changes these inputs in app
+    filter(np_sim_model == input$np_model,
+           sim_branch_length == input$sim_bl) %>%
+    #don't want to filter so that function works
+    group_by(ic_type) %>%
+    #don't want these in table
+    select(-np_sim_model, -sim_branch_length, -ic_type) %>%
+    #model is column names
+    pivot_wider(names_from = "model",
+                values_from = "ic_rank")
+} 
+
+#make_ic_table function-----------------------------------------------
 make_ic_table <- function(prep_ic_table, pick_ic_type) {
   combined_data %>%
     gt() %>%
