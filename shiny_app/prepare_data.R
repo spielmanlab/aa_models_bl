@@ -16,7 +16,7 @@ ic_data <-read_csv(path_to_ic)
 #sbl_data %<>% # assignment pipe. runs and assigns at the same time (see introverse)
  # mutate(model = factor(model, levels = c("FLU", "LG", "JTT", "WAG", "Poisson")))
 
-#join data
+#join data ---------------------------------
 combined_data <- sbl_data %>%
   left_join(de_data) %>%
   left_join(bs_data) %>% 
@@ -30,7 +30,7 @@ combined_data <- sbl_data %>%
          `+G4` = fct_relevel(`+G4`, "Yes")
          ) 
 
-
+#data for the ic tables ----------------------------------------
 data_for_ic_tables <- combined_data %>%
   #have to select otherwise gt shows every single column
   select(np_sim_model, sim_branch_length, model, `+G4`, ic_type, ic_rank) %>%
@@ -40,3 +40,5 @@ data_for_ic_tables <- combined_data %>%
   pivot_wider(names_from = "model",
               values_from = "ic_rank") %>%
   ungroup()
+
+#bf

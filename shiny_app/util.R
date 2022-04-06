@@ -13,11 +13,27 @@ choices_bs <-  c("bias", "slope_when_yint0")
 
 # Functions ------------------------------------------------------------------
 
+#tab 1 show_bf_model_wt function for ic table function -------------------------
+show_bf_model_wt <- function(pick_ic_type,
+                             np_model,
+                             sim_bl) {
+  combined_data %>%
+    filter(ic_rank == 1,
+           ic_type == pick_ic_type,
+           np_sim_model == np_model,
+           sim_branch_length == sim_bl) %>%
+    #only want this value
+    select(ic_weight) %>%
+    #lots of decimals
+    mutate(ic_weight = round(ic_weight, 2))
+}
+
 #make_ic_table function-----------------------------------------------
-make_ic_table <- function(data_for_ic_tables, 
+make_ic_table <- function(pick_ic_type,
+                          data_for_ic_tables, 
                           np_model, 
                           sim_bl, 
-                          pick_ic_type) {
+                          show_bf_model_wt) {
   data_for_ic_tables %>%
     # Filter to only relevant table parts
     filter(np_sim_model == np_model,
@@ -31,7 +47,11 @@ make_ic_table <- function(data_for_ic_tables,
     tab_spanner(label = "Model",
                 columns = c(FLU, LG, JTT, WAG, Poisson)) %>%
     #Poisson wider than other cells so this makes model col width the same
-    cols_width(c(FLU, LG, JTT, WAG, Poisson) ~ px(60)) #%>%
+    cols_width(c(FLU, LG, JTT, WAG, Poisson) ~ px(60)) %>%
+    #adds a note to bottom of table
+    tab_source_note(
+      source_note = glue::glue("The best-fitting model weight is {show_bf_model_wt}"))
+  #%>%
   #color cells according to ic_weight
   #data_color(data = combined_data$ic_weight,
   #          columns = c(FLU, LG, JTT, WAG, Poisson),
@@ -39,6 +59,7 @@ make_ic_table <- function(data_for_ic_tables,
   #          palette = c("blue", "white")),
   #       domain = c(0, 1)) #column scale endpoints
 }
+
 
 #tab 2 plot function, dnds/entropy (x), bias/slope (y) --------------------------
 plot_de_bs_scatter <- function(x_axis, y_axis) {
