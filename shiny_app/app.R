@@ -118,43 +118,8 @@ server <- function(input, output) {
   # Tab 1 renderPlot: simulation scatterplot -------------------------------------
   #base plot
   output$sim_scatter <- renderPlot({
-    combined_data %>%
-      filter(np_sim_model == input$np_model) %>%
-      mutate(bias = round(bias, 3), 
-             slope_when_yint0 = round(slope_when_yint0, 3)) -> data_to_plot
-    
-    data_to_plot %>%
-      filter(sim_branch_length == 0.01) -> data_to_label # this way labels aren't stacked 30+ times on top of each other
-    
-    # Convert string input$bias_or_slope to symbol so can use it in {{}}
-    label_column_symbol <- as.symbol(input$tab1_bias_or_slope_button)
-    
-    ggplot(data_to_plot) + 
-      aes(x = persite_count, 
-          y = branch_length) + 
-      #actual scatterplot 
-      geom_point() +
-      facet_grid(cols = vars(model),
-                 rows = vars(`+G4`)) + 
-      geom_abline(color = "red") +
-      #bias or slope text displayed on graph
-      geom_text(data = data_to_label,
-               aes(label = {{label_column_symbol}}), 
-               y = Inf, 
-               x = -Inf,
-               hjust = -0.25, vjust = 2) + #so that values display (axes change according to np_model)
-      theme_bw() -> sim_plot
-    
-    #add line of best fit
-    if (input$line_of_best_fit_button == yes_string) {
-      
-      sim_plot <- sim_plot + 
-        geom_smooth(method = "lm", 
-                    color = input$line_bf_color, 
-                    size = 0.5)
-      } #if
-    sim_plot # return the final plot
-    },
+    make_sim_scatter(input$np_model, input$tab1_bias_or_slope_button, input$line_of_best_fit_button, input$line_bf_color)
+   },
   height = 576,
   width = 800) #renderPlot()
   
