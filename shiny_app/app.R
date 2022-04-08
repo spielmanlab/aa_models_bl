@@ -211,9 +211,8 @@ server <- function(input, output) {
       tab_style(
         style = cell_fill(color = "lightblue"), #what to color
         locations = cells_body( #where the color should show up
-          columns = (c(fill_model_cell)), 
-          rows = (c(TRUE, FALSE) == 1)
-          )
+          columns = c(fill_model_cell), 
+          rows = (c(TRUE, FALSE) == 1))
         ) %>%
       #adds a note to bottom of table
       tab_source_note(
@@ -224,13 +223,15 @@ server <- function(input, output) {
   output$tab1_AICc_table <- render_gt({
     #order in parentheses needs to be same order that is defined in function!!!!!!
     make_ic_table("AICc", data_for_ic_tables, input$np_model, input$sim_bl, 
+                  color_best_cell,
                   show_bf_model_wt("AICc", input$np_model, input$sim_bl))
   })
   
   #Tab 1 render_gt: BIC, ic ranking corresponding to np_sim_model -----------------------------
   output$tab1_BIC_table <- render_gt({
     make_ic_table( "BIC", data_for_ic_tables, input$np_model, input$sim_bl, 
-                  show_bf_model_wt( "BIC", input$np_model, input$sim_bl))
+                  color_best_cell("BICc", input$np_model, input$sim_bl),
+                  show_bf_model_wt("BIC", input$np_model, input$sim_bl))
   })
   
   
