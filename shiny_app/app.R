@@ -188,6 +188,7 @@ server <- function(input, output) {
   output$tab1_AICc_table <- render_gt({
     #order in parentheses needs to be same order that is defined in function!!!!!!
     make_ic_table("AICc", data_for_ic_tables, input$np_model, input$sim_bl, 
+                  #test tibble
                   color_best_cell,
                   show_bf_model_wt("AICc", input$np_model, input$sim_bl))
   })
@@ -195,6 +196,7 @@ server <- function(input, output) {
   #Tab 1 render_gt: BIC, ic ranking corresponding to np_sim_model -----------------------------
   output$tab1_BIC_table <- render_gt({
     make_ic_table( "BIC", data_for_ic_tables, input$np_model, input$sim_bl, 
+                  #test function
                   color_best_cell("BICc", input$np_model, input$sim_bl),
                   show_bf_model_wt("BIC", input$np_model, input$sim_bl))
   })
