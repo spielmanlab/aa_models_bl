@@ -39,14 +39,4 @@ data_for_ic_tables <- combined_data %>%
   #model is column names
   pivot_wider(names_from = "model",
               values_from = "ic_rank") %>%
-  ungroup()
-
-#make a tibble instead of function for coloring cells???? --------------------
- color_best_cell <- combined_data %>%
-  group_by(ic_type) %>%
-  #model is column names
-  pivot_wider(names_from = "model",
-              values_from = "ic_rank") %>%
-   #no LG with ic_rank of 1
-  select(FLU:WAG) %>%
-  print()
+  ungroup() 

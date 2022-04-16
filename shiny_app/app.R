@@ -138,66 +138,23 @@ server <- function(input, output) {
 
   #Tab 1 render_gt: AIC, ic ranking corresponding to np_sim_model -----------------------------
   output$tab1_AIC_table <- render_gt({
-
-    combined_data %>%
-      filter(ic_rank == 1,
-             ic_type == "AIC", 
-             np_sim_model == input$np_model,
-             sim_branch_length == input$sim_bl) %>%
-      #only want this value
-      select(ic_weight) %>%
-      #lots of decimals
-      mutate(ic_weight = round(ic_weight, 2)) -> bf_model_weight
-    
-    fill_model_cell <- "FLU"
-    #table 
-    combined_data %>%
-      #have to select otherwise gt shows every single column
-      select(np_sim_model, sim_branch_length, model, `+G4`, ic_type, ic_rank, ic_weight) %>%
-      #table changes when user changes these inputs in app
-      filter(ic_type == "AIC",
-             np_sim_model == input$np_model,
-             sim_branch_length == input$sim_bl) %>%
-      #don't want these in table
-      select(-np_sim_model, -sim_branch_length, -ic_type, -ic_weight) %>%
-      #model is column names
-      pivot_wider(names_from = "model",
-                  values_from = "ic_rank") %>%
-      #make table
-      gt() %>%
-      tab_header(title = "AIC",
-                 subtitle = "subtitle?") %>%
-      #like a title above these specific columns
-      tab_spanner(label = "Model",
-                  columns = c(FLU, LG, JTT, WAG, Poisson)) %>%
-      #Poisson wider than other cells so this makes model col width the same
-      cols_width(c(FLU, LG, JTT, WAG, Poisson) ~ px(60)) %>%
-      #color cell best fitting model
-      tab_style(
-        style = cell_fill(color = "lightblue"), #what to color
-        locations = cells_body( #where the color should show up
-          columns = c(fill_model_cell), 
-          rows = (c(TRUE, FALSE) == 1))
-        ) %>%
-      #adds a note to bottom of table
-      tab_source_note(
-        source_note = glue::glue("The best-fitting model weight is {bf_model_weight}"))
+    #order in parentheses needs to be same order that is defined in function!!!!!!
+    make_ic_table("AIC", data_for_ic_tables, input$np_model, input$sim_bl, 
+                  find_column_to_color("AIC", data_for_ic_tables, input$np_model, input$sim_bl),
+                  show_bf_model_wt("AIC", input$np_model, input$sim_bl))
   })
   
   #Tab 1 render_gt: AICc, ic ranking corresponding to np_sim_model -----------------------------
   output$tab1_AICc_table <- render_gt({
-    #order in parentheses needs to be same order that is defined in function!!!!!!
     make_ic_table("AICc", data_for_ic_tables, input$np_model, input$sim_bl, 
-                  #test tibble
-                  color_best_cell,
+                  find_column_to_color("AICc", data_for_ic_tables, input$np_model, input$sim_bl),
                   show_bf_model_wt("AICc", input$np_model, input$sim_bl))
   })
   
   #Tab 1 render_gt: BIC, ic ranking corresponding to np_sim_model -----------------------------
   output$tab1_BIC_table <- render_gt({
     make_ic_table( "BIC", data_for_ic_tables, input$np_model, input$sim_bl, 
-                  #test function
-                  color_best_cell("BICc", input$np_model, input$sim_bl),
+                  find_column_to_color("AIC", data_for_ic_tables, input$np_model, input$sim_bl),
                   show_bf_model_wt("BIC", input$np_model, input$sim_bl))
   })
   

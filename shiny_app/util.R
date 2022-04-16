@@ -73,22 +73,31 @@ show_bf_model_wt <- function(pick_ic_type,
 }
 
 #tab 1 color_best_cell function for ic table function -------------------------
-#color_best_cell <- function(pick_ic_type,
- #                           np_model,
-  #                          sim_bl) {
-  #data_for_ic_tables %>%
-   # filter(np_sim_model == np_model,
-    #       sim_branch_length == sim_bl, 
-     #      ic_type == pick_ic_type) %>%
-    #select(model_levels)
-#}
+find_column_to_color <- function(pick_ic_type,
+                                 data_for_ic_tables, 
+                                 np_model, 
+                                 sim_bl) {
+  #make string of rank 1 model, preps for function
+  data_for_ic_tables %>%
+    # Filter to only relevant table parts
+    filter(np_sim_model == np_model,
+           sim_branch_length == sim_bl, 
+           ic_type == pick_ic_type) %>%
+    select(FLU:last_col()) %>%
+    pivot_longer(everything(), 
+                 names_to = "model",
+                 values_to = "rank") %>%
+    filter(rank == 1) %>%
+    #makes column into vector
+    pull(model) -> rank1_model_string
+}
 
 #tab 1 make_ic_table function-----------------------------------------------
 make_ic_table <- function(pick_ic_type,
                           data_for_ic_tables, 
                           np_model, 
                           sim_bl,
-                          color_best_cell,
+                          rank1_model_string,
                           show_bf_model_wt) {
   data_for_ic_tables %>%
     # Filter to only relevant table parts
@@ -98,7 +107,8 @@ make_ic_table <- function(pick_ic_type,
     # Remove columns we don't want in the table
     select(-np_sim_model, -sim_branch_length, -ic_type) %>%
     gt() %>%
-    tab_header(title = pick_ic_type) %>% 
+    tab_header(title = pick_ic_type,
+               subtitle = "subtitle?") %>% 
     #like a title above these specific columns
     tab_spanner(label = "Model",
                 columns = c(FLU, LG, JTT, WAG, Poisson)) %>%
@@ -108,7 +118,7 @@ make_ic_table <- function(pick_ic_type,
     tab_style(
       style = cell_fill(color = "lightblue"), #what to color
       locations = cells_body( #where the color should show up
-        columns = color_best_cell, 
+        columns = rank1_model_string, 
         rows = c(TRUE, FALSE) == 1
       )) %>%
     #adds a note to bottom of table
