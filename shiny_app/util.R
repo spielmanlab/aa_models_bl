@@ -119,18 +119,11 @@ make_ic_table <- function(pick_ic_type,
       style = cell_fill(color = "lightblue"), #what to color
       locations = cells_body( #where the color should show up
         columns = rank1_model_string, 
-        rows = c(TRUE, FALSE) == 1
+        rows = c("No", "Yes") == 1
       )) %>%
     #adds a note to bottom of table
     tab_source_note(
       source_note = glue::glue("The best-fitting model weight is {show_bf_model_wt}"))
-  #%>%
-  #color cells according to ic_weight
-  #data_color(data = combined_data$ic_weight,
-  #          columns = c(FLU, LG, JTT, WAG, Poisson),
-  #         colors = scales::col_numeric(
-  #          palette = c("blue", "white")),
-  #       domain = c(0, 1)) #column scale endpoints
 }
 
 
