@@ -77,7 +77,7 @@ find_column_to_color <- function(pick_ic_type,
                                  data_for_ic_tables, 
                                  np_model, 
                                  sim_bl) {
-  #make string of rank 1 model, preps for function
+  #make string of rank 1 model
   data_for_ic_tables %>%
     # Filter to only relevant table parts
     filter(np_sim_model == np_model,
@@ -90,6 +90,21 @@ find_column_to_color <- function(pick_ic_type,
     filter(rank == 1) %>%
     #makes column into vector
     pull(model) -> rank1_model_string
+  
+  #string to select rows in table?
+  
+  #NOTE: when testing this change to "rows = ic_table_row_string == 1" in make_ic_table function
+  
+  #data_for_ic_tables %>%
+  #  filter(np_sim_model == np_model,
+   #        sim_branch_length == sim_bl, 
+    #       ic_type == pick_ic_type) %>%
+    #select(`+G4`,FLU:last_col()) %>%
+    #pivot_longer(FLU:last_col(), 
+    #             names_to = "model",
+     #            values_to = "rank") %>%
+    #select(-model) %>%
+    #pull(`+G4`) -> ic_table_row_string
 }
 
 #tab 1 make_ic_table function-----------------------------------------------
