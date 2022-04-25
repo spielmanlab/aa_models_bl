@@ -83,13 +83,18 @@ find_column_to_color <- function(pick_ic_type,
     filter(np_sim_model == np_model,
            sim_branch_length == sim_bl, 
            ic_type == pick_ic_type) %>%
-    select(FLU:last_col()) %>%
-    pivot_longer(everything(), 
+    # also keep the G4 column so we can figure out which row to color
+    select(`+G4`, FLU:last_col()) %>%
+    pivot_longer(FLU:last_col(),  # but don't pivot G4!
                  names_to = "model",
                  values_to = "rank") %>%
-    filter(rank == 1) %>%
-    #makes column into vector
-    pull(model) -> rank1_model_string
+    filter(rank == 1) -> rank1_model
+
+  # Return BOTH the model and G4 strings in a list:
+  return(
+    list("best_model" = rank1_model$model,
+         "best_g4" = rank1_model$`+G4`)
+  )
   
   #string to select rows in table?
   
@@ -113,7 +118,9 @@ make_ic_table <- function(pick_ic_type,
                           np_model, 
                           sim_bl,
                           rank1_model_string,
+                          rank1_g4_string,
                           show_bf_model_wt) {
+
   data_for_ic_tables %>%
     # Filter to only relevant table parts
     filter(np_sim_model == np_model,
@@ -133,8 +140,8 @@ make_ic_table <- function(pick_ic_type,
     tab_style(
       style = cell_fill(color = "lightblue"), #what to color
       locations = cells_body( #where the color should show up
-        columns = rank1_model_string, 
-        rows = c("No", "Yes") == 1
+        columns = all_of(rank1_model_string),# use `all_of` when selecting columns using a string
+        rows    = `+G4` == rank1_g4_string # from: https://gt.rstudio.com/reference/tab_style.html
       )) %>%
     #adds a note to bottom of table
     tab_source_note(

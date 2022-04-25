@@ -139,23 +139,57 @@ server <- function(input, output) {
   #Tab 1 render_gt: AIC, ic ranking corresponding to np_sim_model -----------------------------
   output$tab1_AIC_table <- render_gt({
     #order in parentheses needs to be same order that is defined in function!!!!!!
-    make_ic_table("AIC", data_for_ic_tables, input$np_model, input$sim_bl, 
-                  find_column_to_color("AIC", data_for_ic_tables, input$np_model, input$sim_bl),
-                  show_bf_model_wt("AIC", input$np_model, input$sim_bl))
+    
+    # This now returns a list
+    where_to_color <- find_column_to_color("AIC", 
+                                           data_for_ic_tables, 
+                                           input$np_model, 
+                                           input$sim_bl)
+    
+    make_ic_table("AIC", 
+                  data_for_ic_tables, 
+                  input$np_model, 
+                  input$sim_bl, 
+                  where_to_color[["best_model"]],
+                  where_to_color[["best_g4"]],
+                  show_bf_model_wt("AIC", 
+                                   input$np_model, 
+                                   input$sim_bl))
   })
   
   #Tab 1 render_gt: AICc, ic ranking corresponding to np_sim_model -----------------------------
   output$tab1_AICc_table <- render_gt({
-    make_ic_table("AICc", data_for_ic_tables, input$np_model, input$sim_bl, 
-                  find_column_to_color("AICc", data_for_ic_tables, input$np_model, input$sim_bl),
-                  show_bf_model_wt("AICc", input$np_model, input$sim_bl))
+    where_to_color <- find_column_to_color("AICc", 
+                                           data_for_ic_tables, 
+                                           input$np_model, 
+                                           input$sim_bl)
+    
+    make_ic_table("AICc", 
+                  data_for_ic_tables, 
+                  input$np_model, 
+                  input$sim_bl, 
+                  where_to_color[["best_model"]],
+                  where_to_color[["best_g4"]],
+                  show_bf_model_wt("AICc", 
+                                   input$np_model, 
+                                   input$sim_bl))
   })
   
   #Tab 1 render_gt: BIC, ic ranking corresponding to np_sim_model -----------------------------
   output$tab1_BIC_table <- render_gt({
-    make_ic_table( "BIC", data_for_ic_tables, input$np_model, input$sim_bl, 
-                  find_column_to_color("AIC", data_for_ic_tables, input$np_model, input$sim_bl),
-                  show_bf_model_wt("BIC", input$np_model, input$sim_bl))
+    where_to_color <- find_column_to_color("BIC", 
+                                           data_for_ic_tables, 
+                                           input$np_model, 
+                                           input$sim_bl)
+    make_ic_table("BIC", 
+                  data_for_ic_tables, 
+                  input$np_model, 
+                  input$sim_bl, 
+                  where_to_color[["best_model"]],
+                  where_to_color[["best_g4"]],
+                  show_bf_model_wt("BIC", 
+                                   input$np_model, 
+                                   input$sim_bl))
   })
   
   
