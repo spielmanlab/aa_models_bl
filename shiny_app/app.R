@@ -7,8 +7,10 @@ library(shinyWidgets)
 library(colourpicker)
 library(gt)
 
-## Prepare data for the app --------------------------------------
+## Prepare data for the app, separate file for UI variables and functions --------------------------------------
 source("prepare_data.R")
+source("util.R")
+
 
 #1. builds the ui, the web document (like the drop down menus) --------------------
 #dashboardPage instead of fluidPage
@@ -38,18 +40,24 @@ ui <- dashboardPage(
         # Tab 1 --------------------------------------------------------
         tabName = "tab_01", #tab id (defined above)
         h3("Tab 1 content"), #header level, h1, h2, etc.
-        #Boxes need to be put in a row (or column)
         fluidRow(
+          #Boxes need to be put in a row (or column)
           #add boxes for each thing, order of boxes is order in app
           column(width = 3,
-            #Select nucleoprotein model, dnds/entropy values -------------------
+            #Select nucleoprotein model, sbl, dnds/entropy values -------------------
             box(numericInput(inputId = "np_model", 
                               label = "Select nucleoprotein model",
                               value = 1, #start at 1
                               min = min_np_model,
                               max = max_np_model),
-                  width = NULL,
-                  tableOutput(outputId = "de_np_value_table")),
+                  tableOutput(outputId = "de_np_value_table"),
+                  width = NULL), #top left box
+            box(pickerInput(inputId = "sim_bl",
+                            label = "Select simulation branch length",
+                            choices = choices_sbl,
+                            options = list(
+                              `live-search` = TRUE)),
+                width = NULL),
             #show text of bias or slope ---------------------------------------
             box(
               awesomeRadio(inputId = "tab1_bias_or_slope_button",
@@ -70,10 +78,18 @@ ui <- dashboardPage(
                 colourInput(inputId = "line_bf_color", 
                             label = "Select line of best fit color", 
                             value = "purple"))) #start at purple
-            ), #column()
-          column(width = 7,
-                 plotOutput(outputId = "sim_scatter")) #column()
-        ) #fluidRow() 
+            ), #left column()
+            #tab 1 scatterplot output -----------------------------------------------
+            column(width = 6,
+                   plotOutput(outputId = "sim_scatter"))
+          ), #fluidRow() 
+        #tab 1 ic table output --------------------------------------------------
+        fluidRow(box(gt_output(outputId = "tab1_AIC_table"),
+                     width = 4),
+                 box(gt_output(outputId = "tab1_AICc_table"),
+                     width = 4),
+                 box(gt_output(outputId = "tab1_BIC_table"),
+                     width = 4))
       ), #tabItem() 
       #Subsection 1 table
       # tabName sub_01 ----------------------------------------------
@@ -98,68 +114,88 @@ ui <- dashboardPage(
 
 #2. functions to make the plot, table ----------------------------------------------------
 server <- function(input, output) {
-  
+
   # Tab 1 renderPlot: simulation scatterplot -------------------------------------
   #base plot
   output$sim_scatter <- renderPlot({
-    sbl_de_bs_data %>%
-      filter(np_sim_model == input$np_model) %>%
-      mutate(bias = round(bias, 3), 
-             slope_when_yint0 = round(slope_when_yint0, 3)) -> data_to_plot
-    
-    data_to_plot %>%
-      filter(sim_branch_length == 0.01) -> data_to_label # this way labels aren't stacked 30+ times on top of each other
-    
-    # Convert string input$bias_or_slope to symbol so can use it in {{}}
-    label_column_symbol <- as.symbol(input$tab1_bias_or_slope_button)
-    
-    
-    ggplot(data_to_plot) + 
-      aes(x = persite_count, 
-          y = branch_length) + 
-      geom_point() +
-      facet_grid(cols = vars(model),
-                 rows = vars(ASRV)) + 
-      geom_abline(color = "red") +
-      #this is not working (with only seeing bias and slope_when_yint0)
-      geom_text(data = data_to_label,
-                #couldn't get to work :|
-                #input needs to be string (bias or slope) so you can pick from the 2 buttons in the app
-                #label needs the actual data/numbers
-                #if feed in actual data (ie. selecting the columns and saving to variable), Shiny thinks datapoints are options in app
-               aes(label = {{label_column_symbol}}), # ALERT NEEDS TO BE INPUT$SOMETHINGOROTHER
-               y = Inf,
-               x = -Inf,
-               hjust = -0.25, vjust = 2) +
-      theme_bw() -> sim_plot
-    
-    #add line of best fit
-    if (input$line_of_best_fit_button == yes_string) {
-      
-      sim_plot <- sim_plot + 
-        geom_smooth(method = "lm", 
-                    color = input$line_bf_color, 
-                    size = 0.5)
-      } #if
-    sim_plot # return the final plot
-    },
-  height = 500,
+    make_sim_scatter(input$np_model, input$tab1_bias_or_slope_button, input$line_of_best_fit_button, input$line_bf_color)
+   },
+  height = 576,
   width = 800) #renderPlot()
   
   #not separated by commas
   
   #Tab 1 renderTable: dnds, entropy values of simulation scatterplot (by np model) --------------
   output$de_np_value_table <- renderTable({
-    sbl_de_bs_data %>%
+    combined_data %>%
+      #dnds and entropy values will change with user selected nucleoprotein model
       filter(np_sim_model == input$np_model) %>%
       select(dnds, entropy) %>%
       distinct() #value kept repeating?
   }, digits = 3 #how many decimals
   )
+
+
+  #Tab 1 render_gt: AIC, ic ranking corresponding to np_sim_model -----------------------------
+  output$tab1_AIC_table <- render_gt({
+    #order in parentheses needs to be same order that is defined in function!!!!!!
+    
+    # This now returns a list
+    where_to_color <- find_column_to_color("AIC", 
+                                           data_for_ic_tables, 
+                                           input$np_model, 
+                                           input$sim_bl)
+    
+    make_ic_table("AIC", 
+                  data_for_ic_tables, 
+                  input$np_model, 
+                  input$sim_bl, 
+                  where_to_color[["best_model"]],
+                  where_to_color[["best_g4"]],
+                  show_bf_model_wt("AIC", 
+                                   input$np_model, 
+                                   input$sim_bl))
+  })
+  
+  #Tab 1 render_gt: AICc, ic ranking corresponding to np_sim_model -----------------------------
+  output$tab1_AICc_table <- render_gt({
+    where_to_color <- find_column_to_color("AICc", 
+                                           data_for_ic_tables, 
+                                           input$np_model, 
+                                           input$sim_bl)
+    
+    make_ic_table("AICc", 
+                  data_for_ic_tables, 
+                  input$np_model, 
+                  input$sim_bl, 
+                  where_to_color[["best_model"]],
+                  where_to_color[["best_g4"]],
+                  show_bf_model_wt("AICc", 
+                                   input$np_model, 
+                                   input$sim_bl))
+  })
+  
+  #Tab 1 render_gt: BIC, ic ranking corresponding to np_sim_model -----------------------------
+  output$tab1_BIC_table <- render_gt({
+    where_to_color <- find_column_to_color("BIC", 
+                                           data_for_ic_tables, 
+                                           input$np_model, 
+                                           input$sim_bl)
+    make_ic_table("BIC", 
+                  data_for_ic_tables, 
+                  input$np_model, 
+                  input$sim_bl, 
+                  where_to_color[["best_model"]],
+                  where_to_color[["best_g4"]],
+                  show_bf_model_wt("BIC", 
+                                   input$np_model, 
+                                   input$sim_bl))
+  })
+  
   
   #Tab 2 Subsection 1 renderPlot() dnds/entropy (x), bias/slope (y) -------------------------
   output$de_bs_plot <- renderPlot({
-    de_bs_plot_function(input$tab2_sub1_x_axis_select, input$tab2_sub1_y_axis_select)
+    plot_de_bs_scatter(input$tab2_sub1_x_axis_select, input$tab2_sub1_y_axis_select)
   },
   height = 500,
   width = 800)
