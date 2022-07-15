@@ -14,6 +14,7 @@ Assess the reliability of protein empirical models for inferring divergence. Due
 	+ Fall 2020 - Summer 2021
 + Courtney Charlesworth ([@cjcharlesworth](https://github.com/cjcharlesworth)): Undergraduate research assistant
 	+ Spring 2022
+	+ [Courtney's Website](https://cjcharlesworth.github.io/)
 
 ### Project pipeline: Simulations
 
