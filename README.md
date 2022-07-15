@@ -12,7 +12,7 @@ Assess the reliability of protein empirical models for inferring divergence. Due
 	+ Summer 2019 - Spring 2020
 + Jake Mihalecz ([@jakemihalecz](https://github.com/jakemihalecz)): Undergraduate research assistant
 	+ Fall 2020 - Summer 2021
-+ Courtney Charlesworth ([@CJC992211](https://github.com/CJC992211)): Undergraduate research assistant
++ Courtney Charlesworth ([@cjcharlesworth](https://github.com/cjcharlesworth)): Undergraduate research assistant
 	+ Spring 2022
 
 ### Project pipeline: Simulations
