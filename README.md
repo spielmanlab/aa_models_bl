@@ -2,8 +2,6 @@
 
 > Fleshed out description coming soon!!!
 
-> Note that this repository uses [git LFS](https://git-lfs.github.com/) to manage CSV data files. To contribute, you should install the extension. 
-
 ### Project goal
 Assess the reliability of protein empirical models for inferring divergence. Due to existing empirical rates in matrices, we may expect them to be biased estimators.
 
