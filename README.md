@@ -1,6 +1,7 @@
 # aa_models_bl
 
-> Fleshed out description coming soon!!!
+> This project is no longer active as I have left academia.
+> If you want to take over the project, please be in touch!! 
 
 ### Project goal
 Assess the reliability of protein empirical models for inferring divergence. Due to existing empirical rates in matrices, we may expect them to be biased estimators.
